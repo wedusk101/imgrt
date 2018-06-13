@@ -74,7 +74,7 @@ struct Sphere
 	
 	bool intersects(const Ray &ray, double &t)
 	{
-		const double eps = 1e - 4;
+		const double eps = 0.0004;
 		const Vec3 oc = ray.o - center;
 		const double b = 2 * (ray.o % oc);
 		const double a = ray.d % ray.d;
@@ -99,6 +99,11 @@ struct Light
 	Light(const Vec3 &position_, const double &radius_, const Vec3 &color_) : position(position_), radius(radius_), color(color_) {}
 };
 
+double dot(const Vec3 &a, const Vec3 &b)
+{
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
 void clamp(Vec3 &col)
 {
 	col.x = (col.x > 255) ? 255 : (col.x < 0) ? 0 : col.x;
@@ -119,8 +124,8 @@ int main()
 	const int height = 480;
 	const int width = 640;
 	
-	const Sphere obj(Vec3(0.5 * height, 0.5 * width, 100), 50);
-	const Light light(Vec3(0.25 * height, 0.25 * width, 25), 25, red);
+	Sphere obj(Vec3(0.5 * height, 0.5 * width, 100), 50);
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 25, red);
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
@@ -136,10 +141,16 @@ int main()
 			const Ray cameraRay(Vec3(x, y, 0), Vec3(0, 0, 1));
 			if(obj.intersects(cameraRay, t))
 			{
-				Vec3 
+				Vec3 surf = cameraRay.o + cameraRay.d * t;
+				Vec3 L = light.position - surf;
+				Vec3 N = obj.getNormal(surf);
+				
+				double diff = dot(L.getNormalized(), N.getNormalized());
+				pixelColor = (light.color + white * diff) * 0.5;
+				clamp(pixelColor);
 			}
 			
-			out << "255" << " " << "0" << " " << "0" << "\n"; // write out the pixel values
+			out << pixelColor.x << " " << pixelColor.y << " " << pixelColor.z << "\n"; // write out the pixel values
 		}
 	}
 }
