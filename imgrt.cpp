@@ -1,3 +1,4 @@
+// author - wedusk101 (c) 2018
 #include <fstream>
 #include <cmath>
 
