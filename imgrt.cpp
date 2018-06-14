@@ -118,14 +118,14 @@ int main()
 	const Vec3 white(255, 255, 255);
 	const Vec3 black(0, 0, 0);
 	const Vec3 red(255, 0, 0);
-	const Vec3 blue(0, 255, 0);
-	const Vec3 green(0, 0, 255);
+	const Vec3 green(0, 255, 0);
+	const Vec3 blue(0, 0, 255);
 	
 	const int height = 480;
 	const int width = 640;
 	
 	Sphere obj(Vec3(0.5 * height, 0.5 * width, 200), 5);
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, red);
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue);
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
@@ -142,10 +142,10 @@ int main()
 			if(obj.intersects(cameraRay, t))
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
-				Vec3 L = light.position - surf;
-				Vec3 N = obj.getNormal(surf);
+				Vec3 L = (light.position - surf).getNormalized();
+				Vec3 N = obj.getNormal(surf).getNormalized();
 				
-				double diff = dot(L.getNormalized(), N.getNormalized());
+				double diff = dot(L, N);
 				pixelColor = (light.color + white * diff) * 0.5;
 				clamp(pixelColor);
 			}
