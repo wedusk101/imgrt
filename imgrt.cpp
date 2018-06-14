@@ -124,8 +124,7 @@ int main()
 	
 	const int height = 480;
 	const int width = 640;
-	// const double ambient = 0.25; // optional ambient term for faking global illumination 
-	
+		
 	Sphere obj(Vec3(0.5 * height, 0.5 * width, 200), 5);
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5);
 	
@@ -134,6 +133,7 @@ int main()
 	
 	double t = 0;
 	Vec3 pixelColor(0, 0, 0); // set background color to black 
+	Vec3 ambient(50, 0, 0);	// ambient light
 	
 	for(int y = 0; y < height; y++)
 	{
@@ -148,7 +148,7 @@ int main()
 				Vec3 N = obj.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (light.color + white * diffuse) * light.intensity;
+				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
 				clamp(pixelColor);
 			}
 			
