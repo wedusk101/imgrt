@@ -124,8 +124,8 @@ int main()
 	const int height = 480;
 	const int width = 640;
 	
-	Sphere obj(Vec3(0.5 * height, 0.5 * width, 100), 50);
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 25, red);
+	Sphere obj(Vec3(0.5 * height, 0.5 * width, 200), 5);
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, red);
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
@@ -150,7 +150,7 @@ int main()
 				clamp(pixelColor);
 			}
 			
-			out << pixelColor.x << " " << pixelColor.y << " " << pixelColor.z << "\n"; // write out the pixel values
+			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
 	}
 }
