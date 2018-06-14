@@ -95,8 +95,9 @@ struct Light
 	Vec3 position;
 	double radius;
 	Vec3 color;
+	double intensity;
 	
-	Light(const Vec3 &position_, const double &radius_, const Vec3 &color_) : position(position_), radius(radius_), color(color_) {}
+	Light(const Vec3 &position_, const double &radius_, const Vec3 &color_, const double &intensity_) : position(position_), radius(radius_), color(color_), intensity(intensity_) {}
 };
 
 double dot(const Vec3 &a, const Vec3 &b)
@@ -123,9 +124,10 @@ int main()
 	
 	const int height = 480;
 	const int width = 640;
+	// const double ambient = 0.25; // optional ambient term for faking global illumination 
 	
 	Sphere obj(Vec3(0.5 * height, 0.5 * width, 200), 5);
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue);
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5);
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
@@ -145,8 +147,8 @@ int main()
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = obj.getNormal(surf).getNormalized();
 				
-				double diff = dot(L, N);
-				pixelColor = (light.color + white * diff) * 0.5;
+				double diffuse = dot(L, N);
+				pixelColor = (light.color + white * diffuse) * light.intensity;
 				clamp(pixelColor);
 			}
 			
