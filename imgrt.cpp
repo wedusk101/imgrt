@@ -91,6 +91,29 @@ struct Sphere
 	}
 };
 
+struct Plane
+{
+	Vec3 normal;
+	Vec3 point;
+	
+	Plane(const Vec3 &n, const Vec3 &p) : normal(n), point(p) {}
+	
+	Vec3 getNormal()
+	{
+		return normal;
+	}
+	
+	bool intersects(const Ray &ray, double &t)
+	{
+		const double eps = 0.0004;
+		double parameter = ray.d % normal;
+		if(fabs(parameter) < eps)
+			return false;
+		t = ((point - ray.o) % normal) / parameter;
+		return true;
+	}
+};
+
 struct Light
 {
 	Vec3 position;
@@ -104,6 +127,11 @@ struct Light
 double dot(const Vec3 &a, const Vec3 &b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+Vec3 cross(const Vec3 &a, const Vec3 &b)
+{
+	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
 void clamp(Vec3 &col)
@@ -127,6 +155,7 @@ int main()
 	const int width = 640;
 		
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 5);
+	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500));
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5);
 	
 	std::ofstream out("output.ppm");
@@ -152,6 +181,17 @@ int main()
 				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
 				clamp(pixelColor);
 			}
+			
+			/*if(plane.intersects(cameraRay, t))
+			{
+				Vec3 surf = cameraRay.o + cameraRay.d * t;
+				Vec3 L = (light.position - surf).getNormalized();
+				Vec3 N = plane.getNormal().getNormalized();
+				
+				double diffuse = dot(L, N);
+				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
+				clamp(pixelColor);
+			}*/
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
