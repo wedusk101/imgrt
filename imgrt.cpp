@@ -126,7 +126,7 @@ int main()
 	const int height = 480;
 	const int width = 640;
 		
-	Sphere obj(Vec3(0.5 * height, 0.5 * width, 200), 5);
+	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 5);
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5);
 	
 	std::ofstream out("output.ppm");
@@ -142,11 +142,11 @@ int main()
 		for(int x = 0; x < width; x++)
 		{
 			const Ray cameraRay(Vec3(x, y, 0), Vec3(0, 0, 1));
-			if(obj.intersects(cameraRay, t))
+			if(sphere.intersects(cameraRay, t))
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
-				Vec3 N = obj.getNormal(surf).getNormalized();
+				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
 				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
