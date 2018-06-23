@@ -65,8 +65,9 @@ struct Sphere
 {
 	Vec3 center;
 	double radius;
+	Vec3 color;
 	
-	Sphere(const Vec3 &c, const double &rad) : center(c), radius(rad) {}
+	Sphere(const Vec3 &c, const double &rad, const Vec3 &col) : center(c), radius(rad), color(col) {}
 	
 	Vec3 getNormal(const Vec3 &point) // returns the surface normal at a point
 	{
@@ -95,8 +96,9 @@ struct Plane
 {
 	Vec3 normal;
 	Vec3 point;
+	Vec3 color;
 	
-	Plane(const Vec3 &n, const Vec3 &p) : normal(n), point(p) {}
+	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &c) : normal(n), point(p), color(c) {}
 	
 	Vec3 getNormal()
 	{
@@ -143,7 +145,7 @@ void clamp(Vec3 &col)
 
 int main()
 {
-	// setup camera, colors and lights
+	// setup camera, colors, objects and lights
 	
 	const Vec3 white(255, 255, 255);
 	const Vec3 black(0, 0, 0);
@@ -154,16 +156,16 @@ int main()
 	const int height = 480;
 	const int width = 640;
 		
-	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 5);
-	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500));
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5);
+	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 5, green); // green sphere
+	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5); // blue scene light
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
 	double t = 0;
 	Vec3 pixelColor(0, 0, 0); // set background color to black 
-	Vec3 ambient(50, 0, 0);	// ambient light
+	Vec3 ambient(50, 0, 0);	// light red ambient light
 	
 	for(int y = 0; y < height; y++)
 	{
@@ -178,7 +180,7 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
+				pixelColor = (light.color + sphere.color + white * diffuse) * light.intensity + ambient;
 				clamp(pixelColor);
 			}
 			
@@ -189,7 +191,7 @@ int main()
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (light.color + white * diffuse) * light.intensity + ambient;
+				pixelColor = (light.color + plane.color + white * diffuse) * light.intensity + ambient;
 				clamp(pixelColor);
 			}*/
 			
