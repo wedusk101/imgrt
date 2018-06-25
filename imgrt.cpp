@@ -174,6 +174,7 @@ int main()
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
 	double t = 0, bak = 0;
+	bool depthTest = false;
 	const double ambientIntensity = 0.5;
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	Vec3 ambient(128, 0, 0);	// light red ambient light
@@ -184,6 +185,7 @@ int main()
 		for(int x = 0; x < width; x++)
 		{
 			const Ray cameraRay(Vec3(x, y, 0), Vec3(0, 0, 1));
+			depthTest = false;
 			if(sphere.intersects(cameraRay, t))
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
@@ -191,21 +193,21 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (/*colorModulate(light.color, sphere.color) + */ sphere.color + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				bak = t;
+				depthTest = true;
 				clamp(pixelColor);
 			}
 			
-			if(plane.intersects(cameraRay, t) && t < bak)
+			if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak)
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (/*colorModulate(light.color, sphere.color) + */ plane.color + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				clamp(pixelColor);
-
 			}
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
