@@ -156,14 +156,14 @@ int main()
 	const int height = 480;
 	const int width = 640;
 		
-	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 5, green); // green sphere
-	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
+	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, green); // green sphere
+	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5); // blue scene light
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
-	double t = 0;
+	double t = 0, bak = 0;
 	Vec3 pixelColor(0, 0, 0); // set background color to black 
 	Vec3 ambient(50, 0, 0);	// light red ambient light
 	
@@ -180,12 +180,15 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (light.color + sphere.color + white * diffuse) * light.intensity + ambient;
+				pixelColor = (/*light.color +*/ sphere.color + white * diffuse) * light.intensity + ambient;
+				bak = t;
 				clamp(pixelColor);
 			}
 			
 			/*if(plane.intersects(cameraRay, t))
 			{
+				if(fabs(t) >= fabs(bak))
+					continue;
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = plane.getNormal().getNormalized();
