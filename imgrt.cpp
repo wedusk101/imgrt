@@ -136,6 +136,11 @@ Vec3 cross(const Vec3 &a, const Vec3 &b)
 	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
+Vec3 colorModulate(const Vec3 &a, const Vec3 &b) // performs component wise multiplication for colors
+{
+	return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+}
+
 void clamp(Vec3 &col)
 {
 	col.x = (col.x > 255) ? 255 : (col.x < 0) ? 0 : col.x;
@@ -147,25 +152,31 @@ int main()
 {
 	// setup camera, colors, objects and lights
 	
+	// colors (R, G, B)
 	const Vec3 white(255, 255, 255);
 	const Vec3 black(0, 0, 0);
 	const Vec3 red(255, 0, 0);
 	const Vec3 green(0, 255, 0);
 	const Vec3 blue(0, 0, 255);
+	const Vec3 cyan(0, 255, 255);
+	const Vec3 magenta(255, 0, 255);
+	const Vec3 yellow(255, 255, 0);
 	
 	const int height = 480;
 	const int width = 640;
-		
-	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, green); // green sphere
+	
+	// scene objects and lights
+	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, blue, 0.5); // blue scene light
+	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
 	
 	std::ofstream out("output.ppm");
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
 	double t = 0, bak = 0;
-	Vec3 pixelColor(0, 0, 0); // set background color to black 
-	Vec3 ambient(50, 0, 0);	// light red ambient light
+	const double ambientIntensity = 0.5;
+	Vec3 pixelColor(0, 0, 0);	// set background color to black 
+	Vec3 ambient(128, 0, 0);	// light red ambient light
 	
 	for(int y = 0; y < height; y++)
 	{
@@ -180,23 +191,22 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (/*light.color +*/ sphere.color + white * diffuse) * light.intensity + ambient;
+				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				bak = t;
 				clamp(pixelColor);
 			}
 			
-			/*if(plane.intersects(cameraRay, t))
+			if(plane.intersects(cameraRay, t) && t < bak)
 			{
-				if(fabs(t) >= fabs(bak))
-					continue;
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (light.color + plane.color + white * diffuse) * light.intensity + ambient;
+				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				clamp(pixelColor);
-			}*/
+
+			}
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
