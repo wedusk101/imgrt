@@ -126,6 +126,14 @@ struct Light
 	Light(const Vec3 &position_, const double &radius_, const Vec3 &color_, const double &intensity_) : position(position_), radius(radius_), color(color_), intensity(intensity_) {}
 };
 
+struct Camera
+{
+	Vec3 position;
+	Vec3 direction;
+	
+	Camera(const Vec3 &pos, const Vec3 &dir) : position(pos), direction(dir) {}
+};
+
 double dot(const Vec3 &a, const Vec3 &b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
@@ -150,7 +158,11 @@ void clamp(Vec3 &col)
 
 int main()
 {
-	// setup camera, colors, objects and lights
+	
+	// setup resolution, camera, colors, objects and lights
+	
+	const int height = 480;
+	const int width = 640;
 	
 	// colors (R, G, B)
 	const Vec3 white(255, 255, 255);
@@ -162,9 +174,8 @@ int main()
 	const Vec3 magenta(255, 0, 255);
 	const Vec3 yellow(255, 255, 0);
 	
-	const int height = 480;
-	const int width = 640;
-	
+	const Camera camera(Vec3(0.5 * height, 0.5 * width, 0), Vec3(0, 0, 1)); // scene camera
+		
 	// scene objects and lights
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
@@ -175,16 +186,18 @@ int main()
 	
 	double t = 0, bak = 0;
 	bool depthTest = false;
+	
 	const double ambientIntensity = 0.5;
+	const Vec3 ambient(128, 0, 0);	// light red ambient light
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
-	Vec3 ambient(128, 0, 0);	// light red ambient light
+	
 	
 	for(int y = 0; y < height; y++)
 	{
 		pixelColor = black; // default color of each pixel
 		for(int x = 0; x < width; x++)
 		{
-			const Ray cameraRay(Vec3(x, y, 0), Vec3(0, 0, 1));
+			const Ray cameraRay(Vec3(x, y, 0), camera.direction);
 			depthTest = false;
 			if(sphere.intersects(cameraRay, t))
 			{
@@ -206,7 +219,7 @@ int main()
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = specular (non-Phong)
 				clamp(pixelColor);
 			}
 			
