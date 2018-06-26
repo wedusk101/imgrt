@@ -47,7 +47,7 @@ struct Vec3
 		return x * v.x + y * v.y + z * v.z;
 	}
 	
-	Vec3 operator&(const Vec3 &v) // cross product
+	Vec3 operator&(const Vec3 &v) const // cross product
 	{
 		return Vec3(y * v.z - v.y * z, z * v.x - x * v.z, x * v.y - y * v.x);
 	}
@@ -69,7 +69,7 @@ struct Sphere
 	
 	Sphere(const Vec3 &c, const double &rad, const Vec3 &col) : center(c), radius(rad), color(col) {}
 	
-	Vec3 getNormal(const Vec3 &point) // returns the surface normal at a point
+	Vec3 getNormal(const Vec3 &point) const // returns the surface normal at a point
 	{
 		return (point - center)/radius;
 	}
