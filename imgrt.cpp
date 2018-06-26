@@ -178,7 +178,7 @@ int main()
 		
 	// scene objects and lights
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
-	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
+	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
 	
 	std::ofstream out("output.ppm");
@@ -198,7 +198,7 @@ int main()
 		for(int x = 0; x < width; x++)
 		{
 			const Ray cameraRay(Vec3(x, y, 0), camera.direction);
-			depthTest = false;
+			depthTest = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
 			if(sphere.intersects(cameraRay, t))
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
@@ -212,7 +212,7 @@ int main()
 				clamp(pixelColor);
 			}
 			
-			if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak)
+			/*if(plane.intersects(cameraRay, t) && !depthTest) || plane.intersects(cameraRay, t) && depthTest && t < bak)
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
@@ -221,7 +221,7 @@ int main()
 				double diffuse = dot(L, N);
 				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = specular (non-Phong)
 				clamp(pixelColor);
-			}
+			}*/
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
