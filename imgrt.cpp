@@ -136,9 +136,9 @@ Vec3 cross(const Vec3 &a, const Vec3 &b)
 	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
-Vec3 colorModulate(const Vec3 &a, const Vec3 &b) // performs component wise multiplication for colors
+Vec3 colorModulate(const Vec3 &light, const Vec3 &object) // performs component wise multiplication for colors - please note that the parameter list is order sensitive 
 {
-	return Vec3(a.x * b.x, a.y * b.y, a.z * b.z);
+	return Vec3((light.x / 255) * object.x, (light.y / 255) * object.y, (light.z / 255) * object.z);
 }
 
 void clamp(Vec3 &col)
@@ -193,7 +193,7 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (/*colorModulate(light.color, sphere.color) + */ sphere.color + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				bak = t;
 				depthTest = true;
 				clamp(pixelColor);
@@ -206,7 +206,7 @@ int main()
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (/*colorModulate(light.color, sphere.color) + */ plane.color + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
 				clamp(pixelColor);
 			}
 			
