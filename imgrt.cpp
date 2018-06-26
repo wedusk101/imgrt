@@ -74,9 +74,9 @@ struct Sphere
 		return (point - center)/radius;
 	}
 	
-	bool intersects(const Ray &ray, double &t)
+	bool intersects(const Ray &ray, double &t) const
 	{
-		const double eps = 0.0004;
+		const double eps = 1e-4;
 		const Vec3 oc = ray.o - center;
 		const double b = 2 * (ray.o % oc);
 		const double a = ray.d % ray.d;
@@ -100,14 +100,14 @@ struct Plane
 	
 	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &c) : normal(n), point(p), color(c) {}
 	
-	Vec3 getNormal()
+	Vec3 getNormal() const
 	{
 		return normal;
 	}
 	
-	bool intersects(const Ray &ray, double &t)
+	bool intersects(const Ray &ray, double &t) const
 	{
-		const double eps = 0.0004;
+		const double eps = 1e-4;;
 		double parameter = ray.d % normal;
 		if(fabs(parameter) < eps)
 			return false;
@@ -212,7 +212,7 @@ int main()
 				clamp(pixelColor);
 			}
 			
-			/*if(plane.intersects(cameraRay, t) && !depthTest) || plane.intersects(cameraRay, t) && depthTest && t < bak)
+			/*if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak)
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
