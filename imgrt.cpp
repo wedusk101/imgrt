@@ -82,7 +82,7 @@ struct Sphere
 		const double a = ray.d % ray.d;
 		const double c = (oc % oc) - (radius * radius);
 		double delta = b * b - 4 * a * c;
-		if(delta < eps)
+		if(delta < eps) // discriminant is less than zero
 			return false;
 		delta = sqrt(delta);
 		const double t0 = (-b + delta) / (2 * a);
@@ -109,7 +109,7 @@ struct Plane
 	{
 		const double eps = 1e-4;;
 		double parameter = ray.d % normal;
-		if(fabs(parameter) < eps)
+		if(fabs(parameter) < eps) // ray is parallel to the plane
 			return false;
 		t = ((point - ray.o) % normal) / parameter;
 		return true;
@@ -144,9 +144,9 @@ Vec3 cross(const Vec3 &a, const Vec3 &b)
 	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
-Vec3 colorModulate(const Vec3 &light, const Vec3 &object) // performs component wise multiplication for colors - please note that the parameter list is order sensitive 
+Vec3 colorModulate(const Vec3 &lightColor, const Vec3 &objectColor) // performs component wise multiplication for colors - please note that the parameter list is order sensitive 
 {
-	return Vec3((light.x / 255) * object.x, (light.y / 255) * object.y, (light.z / 255) * object.z);
+	return Vec3((lightColor.x / 255) * objectColor.x, (lightColor.y / 255) * objectColor.y, (lightColor.z / 255) * objectColor.z);
 }
 
 void clamp(Vec3 &col)
@@ -178,27 +178,27 @@ int main()
 		
 	// scene objects and lights
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
-	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), red); // red plane
+	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
 	
-	std::ofstream out("output.ppm");
+	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
 	double t = 0, bak = 0;
 	bool depthTest = false;
 	
-	const double ambientIntensity = 0.5;
 	const Vec3 ambient(128, 0, 0);	// light red ambient light
+	const double ambientIntensity = 0.5;
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
-	
-	
+		
 	for(int y = 0; y < height; y++)
 	{
-		pixelColor = black; // default color of each pixel
 		for(int x = 0; x < width; x++)
 		{
+			pixelColor = black; // default color of each pixel
 			const Ray cameraRay(Vec3(x, y, 0), camera.direction);
 			depthTest = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
+			
 			if(sphere.intersects(cameraRay, t))
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
@@ -206,7 +206,7 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity;
+				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = specular (non-Phong)
 				bak = t;
 				depthTest = true;
 				clamp(pixelColor);
@@ -219,7 +219,7 @@ int main()
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = specular (non-Phong)
+				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
 				clamp(pixelColor);
 			}*/
 			
