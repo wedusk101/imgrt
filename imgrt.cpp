@@ -206,7 +206,7 @@ int main()
 				Vec3 N = sphere.getNormal(surf).getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = specular (non-Phong)
+				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
 				bak = t;
 				depthTest = true;
 				clamp(pixelColor);
