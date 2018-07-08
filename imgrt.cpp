@@ -178,7 +178,7 @@ int main()
 		
 	// scene objects and lights
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
-	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane
+	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane - see line 215 for more details
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
 	
 	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
@@ -212,7 +212,7 @@ int main()
 				clamp(pixelColor);
 			}
 			
-			/*if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak)
+			/*if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak) // Has a bug - doesn't render correctly along with the sphere. Works fine individually.
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
