@@ -1,6 +1,7 @@
 // author - wedusk101 (c) 2018
 #include <fstream>
 #include <cmath>
+#include <iostream>
 
 struct Vec3
 {
@@ -94,8 +95,8 @@ struct Sphere
 
 struct Plane
 {
-	Vec3 normal;
-	Vec3 point;
+	Vec3 normal; // normal of the plane
+	Vec3 point; // a point on the plane
 	Vec3 color;
 	
 	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &c) : normal(n), point(p), color(c) {}
@@ -109,7 +110,8 @@ struct Plane
 	{
 		const double eps = 1e-4;;
 		double parameter = ray.d % normal;
-		if(fabs(parameter) < eps) // ray is parallel to the plane
+		// std::cout << parameter << std::endl;
+		if(parameter > eps) // ray is parallel to the plane
 			return false;
 		t = ((point - ray.o) % normal) / parameter;
 		return true;
@@ -137,6 +139,11 @@ struct Camera
 double dot(const Vec3 &a, const Vec3 &b)
 {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+inline double getEuclideanDistance(const Vec3 &a, const Vec3 &b)
+{
+	return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2) + pow(a.z - b.z, 2));
 }
 
 Vec3 cross(const Vec3 &a, const Vec3 &b)
@@ -178,19 +185,18 @@ int main()
 		
 	// scene objects and lights
 	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
-	// Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane - see line 215 for more details
+	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
+	const Vec3 ambient(128, 0, 0);	// light red ambient light
+	const double ambientIntensity = 0.5;
+	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	
 	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
-	double t = 0, bak = 0;
+	double t = 0, sphereCollisionDist = 0;
 	bool depthTest = false;
 	
-	const Vec3 ambient(128, 0, 0);	// light red ambient light
-	const double ambientIntensity = 0.5;
-	Vec3 pixelColor(0, 0, 0);	// set background color to black 
-		
 	for(int y = 0; y < height; y++)
 	{
 		for(int x = 0; x < width; x++)
@@ -207,21 +213,22 @@ int main()
 				
 				double diffuse = dot(L, N);
 				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
-				bak = t;
+				sphereCollisionDist = getEuclideanDistance(cameraRay.o, surf); 
 				depthTest = true;
 				clamp(pixelColor);
 			}
 			
-			/*if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest && t < bak) // Has a bug - doesn't render correctly along with the sphere. Works fine individually.
+			if(plane.intersects(cameraRay, t) && !depthTest || plane.intersects(cameraRay, t) && depthTest)
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = plane.getNormal().getNormalized();
 				
 				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
+				if(!depthTest || depthTest && getEuclideanDistance(cameraRay.o, surf) < sphereCollisionDist) // seems hacky but works :-(
+					pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
 				clamp(pixelColor);
-			}*/
+			}
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
