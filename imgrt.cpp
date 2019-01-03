@@ -1,7 +1,7 @@
 // author - wedusk101 (c) 2018
 #include <fstream>
 #include <cmath>
-#include <iostream>
+// #include <iostream> // for debugging 
 
 struct Vec3
 {
@@ -110,7 +110,6 @@ struct Plane
 	{
 		const double eps = 1e-4;;
 		double parameter = ray.d % normal;
-		// std::cout << parameter << std::endl;
 		if(parameter > eps) // ray is parallel to the plane
 			return false;
 		t = ((point - ray.o) % normal) / parameter;
