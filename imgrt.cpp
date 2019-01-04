@@ -183,11 +183,13 @@ int main()
 	const Camera camera(Vec3(0.5 * height, 0.5 * width, 0), Vec3(0, 0, 1)); // scene camera
 		
 	// scene objects and lights
-	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 100), 5, blue); // blue sphere
+	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 20), 50, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane
+	
 	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
 	const Vec3 ambient(128, 0, 0);	// light red ambient light
 	const double ambientIntensity = 0.5;
+	
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	
 	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
