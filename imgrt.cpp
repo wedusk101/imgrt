@@ -79,7 +79,7 @@ struct Sphere
 	{
 		const double eps = 1e-4;
 		const Vec3 oc = ray.o - center;
-		const double b = 2 * (ray.o % oc);
+		const double b = 2 * (ray.d % oc);
 		const double a = ray.d % ray.d;
 		const double c = (oc % oc) - (radius * radius);
 		double delta = b * b - 4 * a * c;
