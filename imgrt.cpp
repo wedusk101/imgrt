@@ -56,8 +56,8 @@ struct Vec3
 
 struct Ray
 {
-	Vec3 o;
-	Vec3 d;
+	Vec3 o; // origin
+	Vec3 d; // direction
 	
 	Ray(const Vec3 &o_, const Vec3 &d_) : o(o_), d(d_) {}
 };
@@ -68,10 +68,10 @@ struct Sphere
 	double radius;
 	Vec3 color;
 	
-	bool hasHit;
+	bool hasBeenHit;
 	double distanceToCamera;
 	
-	Sphere(const Vec3 &c, const double &rad, const Vec3 &col) : center(c), radius(rad), color(col), hasHit(false), distanceToCamera(0) {}
+	Sphere(const Vec3 &c, const double &rad, const Vec3 &col) : center(c), radius(rad), color(col), hasBeenHit(false), distanceToCamera(0) {}
 	
 	Vec3 getNormal(const Vec3 &point) const // returns the surface normal at a point
 	{
@@ -102,10 +102,10 @@ struct Plane
 	Vec3 point; // a point on the plane
 	Vec3 color;
 	
-	bool hasHit;
+	bool hasBeenHit;
 	double distanceToCamera;
 	
-	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &c) : normal(n), point(p), color(c), hasHit(false), distanceToCamera(0) {}
+	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &c) : normal(n), point(p), color(c), hasBeenHit(false), distanceToCamera(0) {}
 	
 	Vec3 getNormal() const
 	{
@@ -186,15 +186,15 @@ int main()
 	const Vec3 magenta(255, 0, 255);
 	const Vec3 yellow(255, 255, 0);
 	
-	const Camera camera(Vec3(0.5 * height, 0.5 * width, 0), Vec3(0, 0, 1)); // scene camera
+	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera
 		
 	// scene objects and lights
-	Sphere sphere(Vec3(0.5 * height, 0.5 * width, 200), 50, blue); // blue sphere
-	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * height, 0.5 * width, 500), yellow); // yellow plane
+	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 300), 50, blue); // blue sphere
+	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 500), yellow); // yellow plane
 	
-	Light light(Vec3(0.25 * height, 0.25 * width, 25), 1, white, 0.5); // white scene light
+	Light light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.5); // white scene light
 	const Vec3 ambient(128, 0, 0);	// light red ambient light
-	const double ambientIntensity = 0.5;
+	const double ambientIntensity = 0.25;
 	
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	
@@ -207,12 +207,12 @@ int main()
 	{
 		for(int x = 0; x < width; x++)
 		{
-			pixelColor = black; // default color of each pixel
-			const Ray cameraRay(Vec3(x, y, 0), camera.direction);
-			sphere.hasHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
+			pixelColor = ambient * ambientIntensity; // default color of each pixel
+			const Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
+			sphere.hasBeenHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
 			sphere.distanceToCamera = 0;
 			
-			plane.hasHit = false;
+			plane.hasBeenHit = false;
 			plane.distanceToCamera = 0; 
 			
 			if(sphere.intersects(cameraRay, t))
@@ -220,23 +220,25 @@ int main()
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = sphere.getNormal(surf).getNormalized();
-				
-				double diffuse = dot(L, N);
-				pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
 				sphere.distanceToCamera = getEuclideanDistance(cameraRay.o, surf); 
-				sphere.hasHit = true;
+				sphere.hasBeenHit = true;
+				Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
+				double diffuse = dot(L, N);
+				if(!plane.intersects(shadowRay, t))
+					pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
 				clamp(pixelColor);
 			}
 			
-			if(plane.intersects(cameraRay, t) && !sphere.hasHit || plane.intersects(cameraRay, t) && sphere.hasHit)
+			if(plane.intersects(cameraRay, t) && !sphere.hasBeenHit || plane.intersects(cameraRay, t) && sphere.hasBeenHit)
 			{
 				Vec3 surf = cameraRay.o + cameraRay.d * t;
 				Vec3 L = (light.position - surf).getNormalized();
 				Vec3 N = plane.getNormal().getNormalized();
 				plane.distanceToCamera = getEuclideanDistance(cameraRay.o, surf);
-				
+				plane.hasBeenHit = true;
+				Ray shadowRay(surf, L);
 				double diffuse = dot(L, N);
-				if(!sphere.hasHit || sphere.hasHit && plane.distanceToCamera < sphere.distanceToCamera) // seems hacky but works :-(
+				if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || sphere.hasBeenHit && plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
 					pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
 				clamp(pixelColor);
 			}
