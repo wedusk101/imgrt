@@ -243,4 +243,5 @@ int main()
 			
 			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 		}
-	}}
+	}
+}
