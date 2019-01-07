@@ -201,7 +201,7 @@ int main()
 	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
 	out << "P3\n" << width << " " << height << "\n255\n";
 	
-	double t = 0, sphereCollisionDist = 0;
+	double t = 0;
 		
 	for(int y = 0; y < height; y++)
 	{
