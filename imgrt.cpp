@@ -1,7 +1,9 @@
 // Basic ray-tracer  -  author - wedusk101 (c) 2019
 #include <fstream>
 #include <cmath>
-// #include <iostream> // for debugging 
+#include <iostream> 
+#include <string>
+#include <ctime>
 
 struct Vec3
 {
@@ -189,7 +191,7 @@ int main()
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera
 		
 	// scene objects and lights
-	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 300), 50, blue); // blue sphere
+	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 300), 10, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 500), yellow); // yellow plane
 	
 	Light light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.5); // white scene light
@@ -198,52 +200,70 @@ int main()
 	
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	
-	std::ofstream out("output.ppm"); // creates a PPM image file for saving the rendered output
-	out << "P3\n" << width << " " << height << "\n255\n";
+	double t = 0, posX = 0, posY =0, posZ = 0;
+	clock_t start, stop;
+	const int numFrames = 144; // total number o f frames to be rendered
 	
-	double t = 0;
-		
-	for(int y = 0; y < height; y++)
+	start = clock();
+	
+	for(int i = 0, posX = 0; i < numFrames; i++, posX += 4.44)
 	{
-		for(int x = 0; x < width; x++)
+		sphere.center.x = posX; // animating the sphere object
+		
+		std::string output = "Output/output_" + std::to_string(i); // path and filename - compile with flag -std=c++11
+		std::string filename = output + ".ppm"; // format extension
+		const char *file = filename.c_str(); // conversion to C style string
+		
+		std::ofstream out(file); // creates a PPM image file for saving the rendered output
+		out << "P3\n" << width << " " << height << "\n255\n";
+		
+		std::cout << "Rendering frame ----> " << i << std::endl;
+		
+		for(int y = 0; y < height; y++)
 		{
-			pixelColor = ambient * ambientIntensity; // default color of each pixel
-			const Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
-			sphere.hasBeenHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
-			sphere.distanceToCamera = 0;
-			
-			plane.hasBeenHit = false;
-			plane.distanceToCamera = 0; 
-			
-			if(sphere.intersects(cameraRay, t))
+			for(int x = 0; x < width; x++)
 			{
-				Vec3 surf = cameraRay.o + cameraRay.d * t;
-				Vec3 L = (light.position - surf).getNormalized();
-				Vec3 N = sphere.getNormal(surf).getNormalized();
-				sphere.distanceToCamera = getEuclideanDistance(cameraRay.o, surf); 
-				sphere.hasBeenHit = true;
-				Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
-				double diffuse = dot(L, N);
-				if(!plane.intersects(shadowRay, t))
-					pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
-				clamp(pixelColor);
-			}
+				pixelColor = ambient * ambientIntensity; // default color of each pixel
+				const Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
 			
-			if(plane.intersects(cameraRay, t) && !sphere.hasBeenHit || plane.intersects(cameraRay, t) && sphere.hasBeenHit)
-			{
-				Vec3 surf = cameraRay.o + cameraRay.d * t;
-				Vec3 L = (light.position - surf).getNormalized();
-				Vec3 N = plane.getNormal().getNormalized();
-				plane.distanceToCamera = getEuclideanDistance(cameraRay.o, surf);
-				plane.hasBeenHit = true;
-				Ray shadowRay(surf, L);
-				double diffuse = dot(L, N);
-				if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || sphere.hasBeenHit && plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
-					pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
-				clamp(pixelColor);
-			}
+				sphere.hasBeenHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
+				sphere.distanceToCamera = 0;
 			
-			out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
+				plane.hasBeenHit = false;
+				plane.distanceToCamera = 0; 
+			
+				if(sphere.intersects(cameraRay, t))
+				{
+					Vec3 surf = cameraRay.o + cameraRay.d * t;
+					Vec3 L = (light.position - surf).getNormalized();
+					Vec3 N = sphere.getNormal(surf).getNormalized();
+					sphere.distanceToCamera = getEuclideanDistance(cameraRay.o, surf); 
+					sphere.hasBeenHit = true;
+					Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
+					double diffuse = dot(L, N);
+					if(!plane.intersects(shadowRay, t))
+						pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
+					clamp(pixelColor);
+				}
+			
+				if(plane.intersects(cameraRay, t) && !sphere.hasBeenHit || plane.intersects(cameraRay, t) && sphere.hasBeenHit)
+				{
+					Vec3 surf = cameraRay.o + cameraRay.d * t;
+					Vec3 L = (light.position - surf).getNormalized();
+					Vec3 N = plane.getNormal().getNormalized();
+					plane.distanceToCamera = getEuclideanDistance(cameraRay.o, surf);
+					plane.hasBeenHit = true;
+					Ray shadowRay(surf, L);
+					double diffuse = dot(L, N);
+					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || sphere.hasBeenHit && plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
+						pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
+					clamp(pixelColor);
+				}
+			
+				out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
+			}
 		}
 	}
+	stop = clock();
+	std::cout << "\nTime taken was " << (stop - start) / CLOCKS_PER_SEC << " seconds." << std::endl; 
 }
