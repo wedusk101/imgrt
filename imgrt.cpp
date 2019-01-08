@@ -202,7 +202,7 @@ int main()
 	
 	double t = 0, posX = 0, posY =0, posZ = 0;
 	clock_t start, stop;
-	const int numFrames = 144; // total number o f frames to be rendered
+	const int numFrames = 144; // total number of frames to be rendered
 	
 	start = clock();
 	
