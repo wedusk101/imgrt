@@ -206,7 +206,7 @@ int main()
 	
 	start = clock();
 	
-	for(int i = 0, posX = 0; i < numFrames; i++, posX += 4.44)
+	for(int i = 0, posX = 0; i < numFrames; i++, posX += 4.44) // 640/144 = 4.44 - i.e. the ball moves 4.44 pixels horizontally each frame
 	{
 		sphere.center.x = posX; // animating the sphere object
 		
