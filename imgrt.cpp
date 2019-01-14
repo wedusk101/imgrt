@@ -158,7 +158,7 @@ Vec3 cross(const Vec3 &a, const Vec3 &b)
 	return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
 }
 
-Vec3 colorModulate(const Vec3 &lightColor, const Vec3 &objectColor) // performs component wise multiplication for colors - please note that the parameter list is order sensitive 
+Vec3 colorModulate(const Vec3 &lightColor, const Vec3 &objectColor) // performs component wise multiplication for colors  
 {
 	return Vec3((lightColor.x / 255) * objectColor.x, (lightColor.y / 255) * objectColor.y, (lightColor.z / 255) * objectColor.z);
 }
@@ -200,7 +200,7 @@ int main()
 	
 	Vec3 pixelColor(0, 0, 0);	// set background color to black 
 	
-	double t = 0, posX = 0, posY =0, posZ = 0;
+	double t = 0, posX = 0, posY = 0, posZ = 0;
 	clock_t start, stop;
 	const int numFrames = 144; // total number of frames to be rendered
 	
