@@ -1,9 +1,10 @@
-// Basic ray-tracer  -  author - wedusk101 (c) 2019
+// Basic ray-tracer  -  author - wedusk101, 2019
 #include <fstream>
 #include <cmath>
 #include <iostream> 
 #include <string>
 #include <ctime>
+#include <climits>
 
 struct Vec3
 {
@@ -61,7 +62,9 @@ struct Ray
 	Vec3 o; // origin
 	Vec3 d; // direction
 	
-	Ray(const Vec3 &o_, const Vec3 &d_) : o(o_), d(d_) {}
+	Vec3 closestHitPoint;
+	
+	Ray(const Vec3 &o_, const Vec3 &d_) : o(o_), d(d_), closestHitPoint(Vec3(INT_MAX, INT_MAX, INT_MAX)) {}
 };
 
 struct Sphere
@@ -139,6 +142,8 @@ struct Camera
 {
 	Vec3 position;
 	Vec3 direction;
+	
+	// add a lower left corner for orientation
 	
 	Camera(const Vec3 &pos, const Vec3 &dir) : position(pos), direction(dir) {}
 };
@@ -224,7 +229,7 @@ int main()
 			for(int x = 0; x < width; x++)
 			{
 				pixelColor = ambient * ambientIntensity; // default color of each pixel
-				const Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
+				Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
 			
 				sphere.hasBeenHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
 				sphere.distanceToCamera = 0;
@@ -234,11 +239,13 @@ int main()
 			
 				if(sphere.intersects(cameraRay, t))
 				{
-					Vec3 surf = cameraRay.o + cameraRay.d * t;
+					Vec3 surf = cameraRay.o + cameraRay.d * t; // point of intersection
 					Vec3 L = (light.position - surf).getNormalized();
 					Vec3 N = sphere.getNormal(surf).getNormalized();
-					sphere.distanceToCamera = getEuclideanDistance(cameraRay.o, surf); 
+					sphere.distanceToCamera = getEuclideanDistance(cameraRay.o, surf);
 					sphere.hasBeenHit = true;
+					if(sphere.distanceToCamera < getEuclideanDistance(cameraRay.o, cameraRay.closestHitPoint))
+						cameraRay.closestHitPoint = surf;				
 					Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
 					double diffuse = dot(L, N);
 					if(!plane.intersects(shadowRay, t))
@@ -253,13 +260,15 @@ int main()
 					Vec3 N = plane.getNormal().getNormalized();
 					plane.distanceToCamera = getEuclideanDistance(cameraRay.o, surf);
 					plane.hasBeenHit = true;
+					if(plane.distanceToCamera < getEuclideanDistance(cameraRay.o, cameraRay.closestHitPoint))
+						cameraRay.closestHitPoint = surf;	
 					Ray shadowRay(surf, L);
 					double diffuse = dot(L, N);
 					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || sphere.hasBeenHit && plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
 						pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
-					clamp(pixelColor);
+					clamp(pixelColor);					
 				}
-			
+				
 				out << (int)pixelColor.x << " " << (int)pixelColor.y << " " << (int)pixelColor.z << "\n"; // write out the pixel values
 			}
 		}
