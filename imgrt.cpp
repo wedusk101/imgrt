@@ -253,7 +253,7 @@ int main()
 					clamp(pixelColor);
 				}
 			
-				if(plane.intersects(cameraRay, t) && !sphere.hasBeenHit || plane.intersects(cameraRay, t) && sphere.hasBeenHit)
+				if(plane.intersects(cameraRay, t))
 				{
 					Vec3 surf = cameraRay.o + cameraRay.d * t;
 					Vec3 L = (light.position - surf).getNormalized();
