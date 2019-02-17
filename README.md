@@ -14,4 +14,4 @@ to different image formats as Photoshop CC 2019 doesn't seem to recognize image 
 
 https://github.com/nothings/stb
 
-Last Updated - January 9, 2019
+Last Updated - February 17, 2019
