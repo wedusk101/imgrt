@@ -232,10 +232,10 @@ int main()
 				Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
 			
 				sphere.hasBeenHit = false; // used for determining whether a ray has already intersected the sphere before intersecting the plane
-				sphere.distanceToCamera = 0;
+				sphere.distanceToCamera = INT_MAX;
 			
 				plane.hasBeenHit = false;
-				plane.distanceToCamera = 0; 
+				plane.distanceToCamera = INT_MAX; 
 			
 				if(sphere.intersects(cameraRay, t))
 				{
