@@ -121,7 +121,7 @@ struct Plane
 	{
 		const double eps = 1e-4;;
 		double parameter = ray.d % normal;
-		if(parameter > eps) // ray is parallel to the plane
+		if(fabs(parameter) < eps) // ray is parallel to the plane
 			return false;
 		t = ((point - ray.o) % normal) / parameter;
 		return true;
@@ -196,7 +196,7 @@ int main()
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera
 		
 	// scene objects and lights
-	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 300), 10, blue); // blue sphere
+	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 780), 10, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 500), yellow); // yellow plane
 	
 	Light light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.5); // white scene light
@@ -207,11 +207,11 @@ int main()
 	
 	double t = 0, posX = 0, posY = 0, posZ = 0;
 	clock_t start, stop;
-	const int numFrames = 144; // total number of frames to be rendered
+	const int numFrames = 1; // 44; // total number of frames to be rendered
 	
 	start = clock();
 	
-	for(int i = 0, posX = 0; i < numFrames; i++, posX += 4.44) // 640/144 = 4.44 - i.e. the ball moves 4.44 pixels horizontally each frame
+	for(int i = 0, posX = 320; i < numFrames; i++, posX += 4.44) // 640/144 = 4.44 - i.e. the ball moves 4.44 pixels horizontally each frame
 	{
 		sphere.center.x = posX; // animating the sphere object
 		
@@ -248,8 +248,8 @@ int main()
 						cameraRay.closestHitPoint = surf;				
 					Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
 					double diffuse = dot(L, N);
-					if(!plane.intersects(shadowRay, t))
-						pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
+					// if(!plane.intersects(shadowRay, t))
+					pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
 					clamp(pixelColor);
 				}
 			
@@ -264,7 +264,7 @@ int main()
 						cameraRay.closestHitPoint = surf;	
 					Ray shadowRay(surf, L);
 					double diffuse = dot(L, N);
-					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || sphere.hasBeenHit && plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
+					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay,t) || !sphere.intersects(shadowRay,t) && /* sphere.hasBeenHit && */ sphere.distanceToCamera > plane.distanceToCamera || !(sphere.hasBeenHit && sphere.distanceToCamera < plane.distanceToCamera) && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
 						pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
 					clamp(pixelColor);					
 				}
