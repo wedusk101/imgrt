@@ -196,7 +196,7 @@ int main()
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera
 		
 	// scene objects and lights
-	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 780), 10, blue); // blue sphere
+	Sphere sphere(Vec3(0.5 * width, 0.45 * height, 350), 10, blue); // blue sphere
 	Plane plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 500), yellow); // yellow plane
 	
 	Light light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.5); // white scene light
@@ -248,7 +248,6 @@ int main()
 						cameraRay.closestHitPoint = surf;				
 					Ray shadowRay(surf, L); // shadow ray from point of intersection in the direction of the light source
 					double diffuse = dot(L, N);
-					// if(!plane.intersects(shadowRay, t))
 					pixelColor = (colorModulate(light.color, sphere.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; // white * diffuse = highlight 
 					clamp(pixelColor);
 				}
@@ -264,7 +263,7 @@ int main()
 						cameraRay.closestHitPoint = surf;	
 					Ray shadowRay(surf, L);
 					double diffuse = dot(L, N);
-					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay,t) || !sphere.intersects(shadowRay,t) && /* sphere.hasBeenHit && */ sphere.distanceToCamera > plane.distanceToCamera || !(sphere.hasBeenHit && sphere.distanceToCamera < plane.distanceToCamera) && !sphere.intersects(shadowRay, t)) // seems hacky but works :-(
+					if(!sphere.hasBeenHit && !sphere.intersects(shadowRay, t) || plane.distanceToCamera < sphere.distanceToCamera && !sphere.intersects(shadowRay, t)) // hacky
 						pixelColor = (colorModulate(light.color, plane.color) + white * diffuse) * light.intensity + ambient * ambientIntensity; 
 					clamp(pixelColor);					
 				}
