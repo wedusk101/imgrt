@@ -207,11 +207,11 @@ int main()
 	
 	double t = 0, posX = 0, posY = 0, posZ = 0;
 	clock_t start, stop;
-	const int numFrames = 1; // 44; // total number of frames to be rendered
+	const int numFrames = 144; // total number of frames to be rendered
 	
 	start = clock();
 	
-	for(int i = 0, posX = 320; i < numFrames; i++, posX += 4.44) // 640/144 = 4.44 - i.e. the ball moves 4.44 pixels horizontally each frame
+	for(int i = 0, posX = 0; i < numFrames; i++, posX += 4.44) // 640/144 = 4.44 - i.e. the ball moves 4.44 pixels horizontally each frame
 	{
 		sphere.center.x = posX; // animating the sphere object
 		
