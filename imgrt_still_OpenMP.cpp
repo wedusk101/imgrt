@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstdint>
 #include <thread>
+#include <vector>
+#include <cstring>
 #include "omp.h"
 
 
@@ -203,20 +205,21 @@ void clamp(Vec3 &col)
 	col.z = (col.z > 1) ? 1 : (col.z < 0) ? 0 : col.z;
 }
 
-Vec3 getPixelColor(Ray &cameraRay, Geometry **scene, int sceneSize, const Light *light)
+Vec3 getPixelColor(Ray &cameraRay, std::vector<Geometry*> scene, const Light *light)
 {
     Vec3 ambient(0.25, 0, 0);	// light red ambient light
 	double ambientIntensity = 0.25;
 	Vec3 pixelColor = ambient * ambientIntensity;
 	bool hitStatus = false;
-	int hitIndex = 0;
-	for (int i = 0; i < sceneSize; ++i)
+	int hitIndex = 0, i = 0;
+	for (auto &geo : scene)
 	{
-		if (scene[i]->intersects(cameraRay))
+		if (geo->intersects(cameraRay))
 		{
 			hitStatus = true;		
 			hitIndex = i;
 		}
+        i++;
 	}
 
 	if (hitStatus)
@@ -226,8 +229,8 @@ Vec3 getPixelColor(Ray &cameraRay, Geometry **scene, int sceneSize, const Light 
 
 		// check for shadows
 		Ray shadowRay(surf, L);
-		for (int i = 0; i < sceneSize; ++i)
-			if (scene[i]->intersects(shadowRay))
+		for (auto &geo : scene)
+			if (geo->intersects(shadowRay))
 				return pixelColor;
 
 		Vec3 N = scene[hitIndex]->getNormal(surf).getNormalized();
@@ -251,13 +254,33 @@ int main(int argc, char* argv[])
 	const Vec3 magenta(1, 0, 1);
 	const Vec3 yellow(1, 1, 0);
 
-    // setup multithreading parameters
+    // setup multithreading and benchmark parameters
 
-    int nThreads = 0;
-    if (argc == 1) // no multithreading
-        nThreads = 1;
-    else
-        nThreads = std::thread::hardware_concurrency();
+    int nBenchLoops = 1; 
+    int nThreads = 1;
+    bool isBenchmark = false;
+
+    for (int i = 0; i < argc; i++) // process command line args
+    {
+        if (!strcmp(argv[i], "-mt")) // enables multithreading using OpenMP
+        {
+            std::cout << "Multithreaded rendering enabled.\n";
+            nThreads = std::thread::hardware_concurrency();
+        }
+
+        if (!strcmp(argv[i], "-bench")) // usage -bench numberLoops
+        {
+            isBenchmark = true;
+            if (i + 1 < argc)
+                nBenchLoops = atoi(argv[i+1]); // number of times to loop in benchmark mode
+            else
+            {
+                std::cout << "Benchmark loop count not provided.\n";
+                nBenchLoops = 5;
+            }
+            
+        }
+    } 
 
 	// setup resolution, camera, colors, objects and lights	
 	const int height = 4320;
@@ -265,35 +288,43 @@ int main(int argc, char* argv[])
     const int fbSize = height * width;
     Vec3 *fb = new Vec3[fbSize]; 
 
-    const int sceneSize = 4;
-    Geometry **scene = new Geometry*[sceneSize];
-
     // scene objects and lights
-    scene[0] = new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0));
-    scene[1] = new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1));
-    scene[2] = new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0));
-    scene[3] = new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1));	
+    std::vector<Geometry*> scene;
+    
+    scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0)));
+    scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1)));
+    scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0)));
+    scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1)));
 	
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera	
 	Light *light = new Light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.75); // white scene light		    		
 	
+    if (isBenchmark)
+        std::cout << "Running in benchmark mode. Looping " << nBenchLoops << " times.\n";
+
     std::cout << "Rendering...\n";
 	auto start = std::chrono::high_resolution_clock::now();
 
-#pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1) 
-    for(int y = 0; y < height; y++)
+    for (int run = 0; run < nBenchLoops; run++)
     {
-        for(int x = 0; x < width; x++)
+#pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1) 
+        for(int y = 0; y < height; y++)
         {
-            size_t index = y * width + x;
-            Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
-        
-            fb[index] = getPixelColor(cameraRay, scene, sceneSize, light);			
+            for(int x = 0; x < width; x++)
+            {
+                size_t index = y * width + x;
+                Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
+            
+                fb[index] = getPixelColor(cameraRay, scene, light);			
+            }
         }
     }
 
-
 	auto stop = std::chrono::high_resolution_clock::now(); 
+    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+    std::cout << "Rendering finished successfully.\n";
+    std::cout << "\nTime taken to render was " << diff.count() << " milliseconds." << std::endl; 
 
     std::cout << "Saving render output...\n"; 
     std::ofstream out("result.ppm"); // creates a PPM image file for saving the rendered output
@@ -302,8 +333,7 @@ int main(int argc, char* argv[])
     for (size_t i = 0; i < fbSize; i++)
         out << (int)(255.99 * fb[i].x) << " " << (int)(255.99 * fb[i].y) << " " << (int)(255.99 * fb[i].z) << "\n"; // write out the pixel values
 
-    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-    std::cout << "\nTime taken to render was " << diff.count() << " milliseconds." << std::endl; 
-
+    
+    std::cout << "Render output saved successfully.\n";
     delete[] fb;
 }
