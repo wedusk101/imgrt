@@ -83,6 +83,8 @@ struct Geometry
 {
 	Vec3 color;
 
+	virtual ~Geometry() {}
+
 	virtual bool intersects(const Ray &ray) const = 0;
 	virtual Vec3 getNormal(const Vec3 &point) const = 0;
 };
@@ -96,6 +98,8 @@ struct Sphere : public Geometry
     {
         color = col;
     }
+
+	~Sphere() {}
 	
 	virtual Vec3 getNormal(const Vec3 &point) const // returns the surface normal at a point
 	{
@@ -135,6 +139,8 @@ struct Plane : public Geometry
     {
         color = col;
     }
+
+	~Plane() {}
 	
 	virtual Vec3 getNormal(const Vec3 &point) const
 	{
@@ -212,6 +218,7 @@ Vec3 getPixelColor(Ray &cameraRay, std::vector<Geometry*> scene, const Light *li
 	Vec3 pixelColor = ambient * ambientIntensity;
 	bool hitStatus = false;
 	int hitIndex = 0, i = 0;
+	
 	for (auto &geo : scene)
 	{
 		if (geo->intersects(cameraRay))
@@ -240,6 +247,14 @@ Vec3 getPixelColor(Ray &cameraRay, std::vector<Geometry*> scene, const Light *li
 	}
 
 	return pixelColor;
+}
+
+void cleanup(Vec3 **frameBuffer, Light **light, std::vector<Geometry*> scene)
+{
+	delete [] *frameBuffer;
+	delete *light;
+	for (auto &geo : scene)
+		delete geo;
 }
 
 int main(int argc, char* argv[])
@@ -332,8 +347,7 @@ int main(int argc, char* argv[])
 
     for (size_t i = 0; i < fbSize; i++)
         out << (int)(255.99 * fb[i].x) << " " << (int)(255.99 * fb[i].y) << " " << (int)(255.99 * fb[i].z) << "\n"; // write out the pixel values
-
     
     std::cout << "Render output saved successfully.\n";
-    delete[] fb;
+	cleanup(&fb, &light, scene);
 }
