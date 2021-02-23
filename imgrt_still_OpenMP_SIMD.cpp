@@ -133,6 +133,8 @@ struct Vec3Cluster4
 	float z[4];
 };
 
+struct Geometry;
+
 struct RayCluster4
 {
 	float ox[4];
@@ -148,11 +150,13 @@ struct RayCluster4
 	float tMax[4];
 	
 	float hasHit[4];
+	const Geometry* geometry[4];
 };
 
 struct Geometry
 {
 	Vec3 color;
+	std::string geoName;
 
 	virtual ~Geometry() {}
 
@@ -166,9 +170,10 @@ struct Sphere : public Geometry
 	Vec3 center;
 	float radius;
 
-	Sphere(const Vec3 &c, const float &rad, const Vec3 &col) : center(c), radius(rad)
+	Sphere(const Vec3 &c, const float &rad, const Vec3 &col, const std::string &name_) : center(c), radius(rad)
     {
         color = col;
+		geoName = name_;
     }
 
 	~Sphere() {}
@@ -325,25 +330,37 @@ struct Sphere : public Geometry
 		{
 			rayBatch.tMax[0] = rayBatch.t[0];
 			rayBatch.hasHit[0] = 1;
+			rayBatch.geometry[0] = this;
 		}
+		else
+			rayBatch.hasHit[0] = 0; //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		if (maskHit1) // && !missRay1)
 		{
 			rayBatch.tMax[1] = rayBatch.t[1];
 			rayBatch.hasHit[1] = 1;
+			rayBatch.geometry[1] = this;
 		}
+		else
+			rayBatch.hasHit[1] = 0; //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		if (maskHit2) // && !missRay2)
 		{
 			rayBatch.tMax[2] = rayBatch.t[2];
 			rayBatch.hasHit[2] = 1;
+			rayBatch.geometry[2] = this;
 		}
+		else
+			rayBatch.hasHit[2] = 0;
 		
 		if (maskHit3) // && !missRay3)
 		{
 			rayBatch.tMax[3] = rayBatch.t[3];
 			rayBatch.hasHit[3] = 1;
+			rayBatch.geometry[3] = this;
 		}
+		else
+			rayBatch.hasHit[3] = 0;
 	}		
 };
 
@@ -352,9 +369,10 @@ struct Plane : public Geometry
 	Vec3 normal; // normal of the plane
 	Vec3 point; // a point on the plane
 	
-	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &col) : normal(n), point(p)
+	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &col, const std::string &name_) : normal(n), point(p)
     {
         color = col;
+		geoName = name_;
     }
 
 	~Plane() {}
@@ -603,14 +621,8 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 		{
 			if (cameraRayBatch.hasHit[j])
 			{
-				hitIndex[j] = i;
-			
-				if (i == 0 || i == 1)
-				{
-					std::cout << "Hit " << cameraRayBatch.ox[i] << " " << cameraRayBatch.oy[i] << std::endl;
-					// std::cout << "Hit id " << i << std::endl;
-					
-				}
+				hitIndex[j] = i; // check this part - this is the index of the last object in the scene ///////////////////////////////////////////
+				// std::cout << geo->geoName << std::endl;
 			}
 		}
         i++; // enumerates geometry
@@ -627,7 +639,7 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 			bool isOccluded = false;
 			*/
 			
-			outColor = scene[hitIndex[k]]->color;
+			outColor = cameraRayBatch.geometry[k]->color;// scene[hitIndex[k]]->color;
 			updateVec3Batch(pixelColor4, k, outColor);
 			
 			/*
@@ -653,7 +665,11 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 	}
 	return pixelColor4;
 }
+/////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
 void updatePixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light, Vec3Cluster4 &pixelColor4)
 {
     Vec3 ambient(0.25, 0, 0);	// light red ambient light
@@ -717,6 +733,12 @@ void updatePixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<Geomet
 		}
 	}
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////
 
 void renderSIMD(Vec3 *fb,
 				Light *light,
@@ -935,10 +957,10 @@ int main(int argc, char* argv[])
     // scene objects and lights
     std::vector<Geometry*> scene;
     
-    scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0)));
-    scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1)));
-    // scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0)));
-    scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1)));
+    scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0), "Red Sphere"));
+    scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1), "Blue Sphere"));
+    // scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0), "Yellow Plane"));
+    scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1), "Cyan Sphere"));
 	
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera	
 	Light *light = new Light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.75); // white scene light		    		
