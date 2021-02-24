@@ -9,6 +9,7 @@
 #include <thread>
 #include <vector>
 #include <cstring>
+#include <algorithm>
 #include <immintrin.h>
 #include "omp.h"
 
@@ -297,12 +298,27 @@ struct Sphere : public Geometry
 		int tcmp1 = _mm_extract_ps(_maskt, 2);
 		int tcmp2 = _mm_extract_ps(_maskt, 1);
 		int tcmp3 = _mm_extract_ps(_maskt, 0);
-		
-		rayBatch.t[0] = tcmp0 ? _mm_extract_ps(_t0, 3) : _mm_extract_ps(_t1, 3);
-		rayBatch.t[1] = tcmp1 ? _mm_extract_ps(_t0, 2) : _mm_extract_ps(_t1, 2);
-		rayBatch.t[2] = tcmp2 ? _mm_extract_ps(_t0, 1) : _mm_extract_ps(_t1, 1);
-		rayBatch.t[3] = tcmp3 ? _mm_extract_ps(_t0, 0) : _mm_extract_ps(_t1, 0);
-		
+
+		if (tcmp0)
+			_MM_EXTRACT_FLOAT(rayBatch.t[0], _t0, 3);
+		else
+			_MM_EXTRACT_FLOAT(rayBatch.t[0], _t1, 3);
+
+		if (tcmp1)
+			_MM_EXTRACT_FLOAT(rayBatch.t[1], _t0, 2);
+		else
+			_MM_EXTRACT_FLOAT(rayBatch.t[1], _t1, 2);
+
+		if (tcmp2)
+			_MM_EXTRACT_FLOAT(rayBatch.t[2], _t0, 1);
+		else
+			_MM_EXTRACT_FLOAT(rayBatch.t[2], _t1, 1);
+
+		if (tcmp3)
+			_MM_EXTRACT_FLOAT(rayBatch.t[3], _t0, 0);
+		else
+			_MM_EXTRACT_FLOAT(rayBatch.t[3], _t1, 0);
+
 		// if (ray.t >= ray.tMin && ray.t <= ray.tMax)
 		//		ray.tMax = ray.t; return true;
 	
@@ -318,28 +334,28 @@ struct Sphere : public Geometry
 		int maskHit2 = _mm_extract_ps(_maskhit, 1);
 		int maskHit3 = _mm_extract_ps(_maskhit, 0);
 		
-		if (maskHit0 && !missRay0)
+		if (maskHit0) // && !missRay0)
 		{
 			rayBatch.tMax[0] = rayBatch.t[0];
 			rayBatch.hasHit[0] = 1;
 			rayBatch.geometry[0] = this;
 		}
 				
-		if (maskHit1 && !missRay1)
+		if (maskHit1) // && !missRay1)
 		{
 			rayBatch.tMax[1] = rayBatch.t[1];
 			rayBatch.hasHit[1] = 1;
 			rayBatch.geometry[1] = this;
 		}
 				
-		if (maskHit2 && !missRay2)
+		if (maskHit2) // && !missRay2)
 		{
 			rayBatch.tMax[2] = rayBatch.t[2];
 			rayBatch.hasHit[2] = 1;
 			rayBatch.geometry[2] = this;
 		}
 				
-		if (maskHit3 && !missRay3)
+		if (maskHit3) // && !missRay3)
 		{
 			rayBatch.tMax[3] = rayBatch.t[3];
 			rayBatch.hasHit[3] = 1;
@@ -384,7 +400,105 @@ struct Plane : public Geometry
 	
 	virtual void intersectsBatch(RayCluster4 &rayBatch) const
 	{
-		return;
+		// const float eps = 1e-4;
+		__m128 _eps = _mm_set1_ps(1e-4);
+
+		__m128 _rayox = _mm_setr_ps(rayBatch.ox[3], rayBatch.ox[2], rayBatch.ox[1], rayBatch.ox[0]);
+		__m128 _rayoy = _mm_setr_ps(rayBatch.oy[3], rayBatch.oy[2], rayBatch.oy[1], rayBatch.oy[0]);
+		__m128 _rayoz = _mm_setr_ps(rayBatch.oz[3], rayBatch.oz[2], rayBatch.oz[1], rayBatch.oz[0]);
+
+		__m128 _raydx = _mm_setr_ps(rayBatch.dx[3], rayBatch.dx[2], rayBatch.dx[1], rayBatch.dx[0]);
+		__m128 _raydy = _mm_setr_ps(rayBatch.dy[3], rayBatch.dy[2], rayBatch.dy[1], rayBatch.dy[0]);
+		__m128 _raydz = _mm_setr_ps(rayBatch.dz[3], rayBatch.dz[2], rayBatch.dz[1], rayBatch.dz[0]);
+
+		__m128 _normalx = _mm_set1_ps(normal.x);
+		__m128 _normaly = _mm_set1_ps(normal.y);
+		__m128 _normalz = _mm_set1_ps(normal.z);
+
+		__m128 _pointx = _mm_set1_ps(point.x);
+		__m128 _pointy = _mm_set1_ps(point.y);
+		__m128 _pointz = _mm_set1_ps(point.z);
+
+		// double parameter = ray.d % normal;
+		__m128 _parmx = _mm_mul_ps(_raydx, _normalx);
+		__m128 _parmy = _mm_mul_ps(_raydy, _normaly);
+		__m128 _parmz = _mm_mul_ps(_raydz, _normalz);
+		__m128 _parm = _mm_add_ps(_parmx, _parmy);
+		_parm = _mm_add_ps(_parm, _parmz);
+
+		__m128 _signmask = _mm_set1_ps(-0.0);
+		__m128 _fabsparm = _mm_andnot_ps(_signmask, _parm); // calculates the floating point absolute value of _parm
+
+		// if(fabs(parameter) < eps) return false
+		__m128 _maskparm = _mm_cmplt_ps(_fabsparm, _eps);
+
+		int missRay0 = _mm_extract_ps(_maskparm, 3);
+		int missRay1 = _mm_extract_ps(_maskparm, 2);
+		int missRay2 = _mm_extract_ps(_maskparm, 1);
+		int missRay3 = _mm_extract_ps(_maskparm, 0);
+
+		if (missRay0 && missRay1 && missRay2 && missRay3)
+			return;		
+
+		// ray.t = ((point - ray.o) % normal) / parameter;
+		__m128 _pmrayox = _mm_sub_ps(_pointx, _rayox);
+		__m128 _pmrayoy = _mm_sub_ps(_pointy, _rayoy);
+		__m128 _pmrayoz = _mm_sub_ps(_pointz, _rayoz);
+
+		__m128 _prnormx = _mm_mul_ps(_pmrayox, _normalx);
+		__m128 _prnormy = _mm_mul_ps(_pmrayoy, _normaly);
+		__m128 _prnormz = _mm_mul_ps(_pmrayoz, _normalz);
+		__m128 _prdotnorm = _mm_add_ps(_prnormx, _prnormy);
+		_prdotnorm = _mm_add_ps(_prdotnorm, _prnormz);
+
+		__m128 _rayt = _mm_div_ps(_prdotnorm, _parm);
+		_MM_EXTRACT_FLOAT(rayBatch.t[0], _rayt, 3);
+		_MM_EXTRACT_FLOAT(rayBatch.t[1], _rayt, 2);
+		_MM_EXTRACT_FLOAT(rayBatch.t[2], _rayt, 1);
+		_MM_EXTRACT_FLOAT(rayBatch.t[3], _rayt, 0);
+
+
+		// if (ray.t >= ray.tMin && ray.t <= ray.tMax)
+		//		ray.tMax = ray.t; return true;
+
+		__m128 _raytmin = _mm_setr_ps(rayBatch.tMin[3], rayBatch.tMin[2], rayBatch.tMin[1], rayBatch.tMin[0]);
+		__m128 _raytmax = _mm_setr_ps(rayBatch.tMax[3], rayBatch.tMax[2], rayBatch.tMax[1], rayBatch.tMax[0]);
+		__m128 _maskRtgtMin = _mm_cmpge_ps(_rayt, _raytmin);
+		__m128 _maskRtltMax = _mm_cmple_ps(_rayt, _raytmax);
+		__m128 _maskhit = _mm_and_ps(_maskRtgtMin, _maskRtltMax);
+
+		int maskHit0 = _mm_extract_ps(_maskhit, 3);
+		int maskHit1 = _mm_extract_ps(_maskhit, 2);
+		int maskHit2 = _mm_extract_ps(_maskhit, 1);
+		int maskHit3 = _mm_extract_ps(_maskhit, 0);
+
+		if (maskHit0 && !missRay0)
+		{
+			rayBatch.tMax[0] = rayBatch.t[0];
+			rayBatch.hasHit[0] = 1;
+			rayBatch.geometry[0] = this;
+		}
+
+		if (maskHit1 && !missRay1)
+		{
+			rayBatch.tMax[1] = rayBatch.t[1];
+			rayBatch.hasHit[1] = 1;
+			rayBatch.geometry[1] = this;
+		}
+
+		if (maskHit2 && !missRay2)
+		{
+			rayBatch.tMax[2] = rayBatch.t[2];
+			rayBatch.hasHit[2] = 1;
+			rayBatch.geometry[2] = this;
+		}
+
+		if (maskHit3 && !missRay3)
+		{
+			rayBatch.tMax[3] = rayBatch.t[3];
+			rayBatch.hasHit[3] = 1;
+			rayBatch.geometry[3] = this;
+		}
 	}
 };
 
@@ -515,14 +629,6 @@ void initRayBatch(RayCluster4 &rayBatch, const Ray &r0, const Ray &r1, const Ray
 	}	
 }
 
-void resetRayBatchHitState(RayCluster4 &rayBatch)
-{
-	rayBatch.hasHit[0] = 0;
-	rayBatch.hasHit[1] = 0;
-	rayBatch.hasHit[2] = 0;
-	rayBatch.hasHit[3] = 0;
-}
-
 Ray getRayBatchData(const RayCluster4 &rayBatch, int index)
 {
 	Vec3 o(rayBatch.ox[index], rayBatch.oy[index], rayBatch.oz[index]);
@@ -573,8 +679,8 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 			else
 			{
 				Vec3 N = (cameraRayBatch.geometry[k]->getNormal(surf)).getNormalized();
-				// outColor = (colorModulate(light->color, cameraRayBatch.geometry[k]->color) * diffuse) * light->intensity;
-				outColor = cameraRayBatch.geometry[k]->color;
+				float diffuse = std::max(0.0f, L.dot(N));
+				outColor = (colorModulate(light->color, cameraRayBatch.geometry[k]->color) * diffuse) * light->intensity;				
 				clamp(outColor);
 				updateVec3Batch(pixelColor4, k, outColor);
 			}	
@@ -804,7 +910,7 @@ int main(int argc, char* argv[])
     
     scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0), "Red Sphere"));
     scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1), "Blue Sphere"));
-    // scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0), "Yellow Plane"));
+    scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0), "Yellow Plane"));
     scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1), "Cyan Sphere"));
 	
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera	
