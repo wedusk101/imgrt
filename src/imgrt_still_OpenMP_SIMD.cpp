@@ -303,24 +303,40 @@ struct Sphere : public Geometry
 		int tcmp3 = _mm_extract_ps(_maskt, 0);
 
 		if (tcmp0)
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[0], _t0, 3);
+		}
 		else
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[0], _t1, 3);
+		}
 
 		if (tcmp1)
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[1], _t0, 2);
+		}
 		else
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[1], _t1, 2);
+		}
 
 		if (tcmp2)
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[2], _t0, 1);
+		}
 		else
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[2], _t1, 1);
+		}
 
 		if (tcmp3)
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[3], _t0, 0);
+		}
 		else
+		{
 			_MM_EXTRACT_FLOAT(rayBatch.t[3], _t1, 0);
+		}
 
 		// if (ray.t >= ray.tMin && ray.t <= ray.tMax)
 		//		ray.tMax = ray.t; return true;
