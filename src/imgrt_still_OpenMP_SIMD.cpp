@@ -132,6 +132,7 @@ struct alignas(64) Vec3Cluster4
 	float x[4];
 	float y[4];
 	float z[4];
+	char PADDING[16];
 };
 
 struct Geometry;
@@ -152,6 +153,8 @@ struct alignas(64) RayCluster4
 	
 	float hasHit[4];
 	const Geometry* geometry[4];
+
+	char PADDING[16];
 };
 
 struct Geometry
@@ -211,16 +214,15 @@ struct Sphere : public Geometry
 	{
 		// const float eps = 1e-4;
 		__m128 _eps = _mm_set1_ps(1e-4);
-		
-		__m128 _rayox = _mm_load_ps(rayBatch.ox);
-		__m128 _rayoy = _mm_load_ps(rayBatch.oy);
-		__m128 _rayoz = _mm_load_ps(rayBatch.oz);
 
-		__m128 _raydx = _mm_load_ps(rayBatch.dx);
-		__m128 _raydy = _mm_load_ps(rayBatch.dy);
-		__m128 _raydz = _mm_load_ps(rayBatch.dz);
+		__m128 _rayox = _mm_setr_ps(rayBatch.ox[3], rayBatch.ox[2], rayBatch.ox[1], rayBatch.ox[0]);
+		__m128 _rayoy = _mm_setr_ps(rayBatch.oy[3], rayBatch.oy[2], rayBatch.oy[1], rayBatch.oy[0]);
+		__m128 _rayoz = _mm_setr_ps(rayBatch.oz[3], rayBatch.oz[2], rayBatch.oz[1], rayBatch.oz[0]);
 
-		
+		__m128 _raydx = _mm_setr_ps(rayBatch.dx[3], rayBatch.dx[2], rayBatch.dx[1], rayBatch.dx[0]);
+		__m128 _raydy = _mm_setr_ps(rayBatch.dy[3], rayBatch.dy[2], rayBatch.dy[1], rayBatch.dy[0]);
+		__m128 _raydz = _mm_setr_ps(rayBatch.dz[3], rayBatch.dz[2], rayBatch.dz[1], rayBatch.dz[0]);
+
 		__m128 _centerx = _mm_set1_ps(center.x);
 		__m128 _centery = _mm_set1_ps(center.y);
 		__m128 _centerz = _mm_set1_ps(center.z);
@@ -323,9 +325,9 @@ struct Sphere : public Geometry
 		// if (ray.t >= ray.tMin && ray.t <= ray.tMax)
 		//		ray.tMax = ray.t; return true;
 	
-		__m128 _rayt = _mm_load_ps(rayBatch.t);
-		__m128 _raytmin = _mm_load_ps(rayBatch.tMin);
-		__m128 _raytmax = _mm_load_ps(rayBatch.tMax);
+		__m128 _rayt = _mm_setr_ps(rayBatch.t[3], rayBatch.t[2], rayBatch.t[1], rayBatch.t[0]);
+		__m128 _raytmin = _mm_setr_ps(rayBatch.tMin[3], rayBatch.tMin[2], rayBatch.tMin[1], rayBatch.tMin[0]);
+		__m128 _raytmax = _mm_setr_ps(rayBatch.tMax[3], rayBatch.tMax[2], rayBatch.tMax[1], rayBatch.tMax[0]);
 
 		__m128 _maskRtgtMin = _mm_cmpge_ps(_rayt, _raytmin);
 		__m128 _maskRtltMax = _mm_cmple_ps(_rayt, _raytmax);
@@ -405,13 +407,13 @@ struct Plane : public Geometry
 		// const float eps = 1e-4;
 		__m128 _eps = _mm_set1_ps(1e-4);
 
-		__m128 _rayox = _mm_load_ps(rayBatch.ox);
-		__m128 _rayoy = _mm_load_ps(rayBatch.oy);
-		__m128 _rayoz = _mm_load_ps(rayBatch.oz);
+		__m128 _rayox = _mm_setr_ps(rayBatch.ox[3], rayBatch.ox[2], rayBatch.ox[1], rayBatch.ox[0]);
+		__m128 _rayoy = _mm_setr_ps(rayBatch.oy[3], rayBatch.oy[2], rayBatch.oy[1], rayBatch.oy[0]);
+		__m128 _rayoz = _mm_setr_ps(rayBatch.oz[3], rayBatch.oz[2], rayBatch.oz[1], rayBatch.oz[0]);
 
-		__m128 _raydx = _mm_load_ps(rayBatch.dx);
-		__m128 _raydy = _mm_load_ps(rayBatch.dy);
-		__m128 _raydz = _mm_load_ps(rayBatch.dz);
+		__m128 _raydx = _mm_setr_ps(rayBatch.dx[3], rayBatch.dx[2], rayBatch.dx[1], rayBatch.dx[0]);
+		__m128 _raydy = _mm_setr_ps(rayBatch.dy[3], rayBatch.dy[2], rayBatch.dy[1], rayBatch.dy[0]);
+		__m128 _raydz = _mm_setr_ps(rayBatch.dz[3], rayBatch.dz[2], rayBatch.dz[1], rayBatch.dz[0]);
 
 		__m128 _normalx = _mm_set1_ps(normal.x);
 		__m128 _normaly = _mm_set1_ps(normal.y);
@@ -463,8 +465,8 @@ struct Plane : public Geometry
 		// if (ray.t >= ray.tMin && ray.t <= ray.tMax)
 		//		ray.tMax = ray.t; return true;
 
-		__m128 _raytmin = _mm_load_ps(rayBatch.tMin);
-		__m128 _raytmax = _mm_load_ps(rayBatch.tMax);
+		__m128 _raytmin = _mm_setr_ps(rayBatch.tMin[3], rayBatch.tMin[2], rayBatch.tMin[1], rayBatch.tMin[0]);
+		__m128 _raytmax = _mm_setr_ps(rayBatch.tMax[3], rayBatch.tMax[2], rayBatch.tMax[1], rayBatch.tMax[0]);
 
 		__m128 _maskRtgtMin = _mm_cmpge_ps(_rayt, _raytmin);
 		__m128 _maskRtltMax = _mm_cmple_ps(_rayt, _raytmax);
