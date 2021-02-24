@@ -273,16 +273,8 @@ struct Sphere : public Geometry
 		int missRay2 = _mm_extract_ps(_maskdelta, 1);
 		int missRay3 = _mm_extract_ps(_maskdelta, 0);
 		
-		rayBatch.hasHit[0] = missRay0 ? 0 : rayBatch.hasHit[0];
-		rayBatch.hasHit[1] = missRay1 ? 0 : rayBatch.hasHit[1];
-		rayBatch.hasHit[2] = missRay2 ? 0 : rayBatch.hasHit[2];
-		rayBatch.hasHit[3] = missRay3 ? 0 : rayBatch.hasHit[3];
-		
 		if (missRay0 && missRay1 && missRay2 && missRay3)
-		{
-			// std::cout << "Missed " << rayBatch.ox[1] << " " << rayBatch.oy[1] << std::endl;
 			return;
-		}
 		
 		//delta = sqrt(delta);
 		_delta = _mm_sqrt_ps(_delta);
@@ -332,35 +324,27 @@ struct Sphere : public Geometry
 			rayBatch.hasHit[0] = 1;
 			rayBatch.geometry[0] = this;
 		}
-		else
-			rayBatch.hasHit[0] = 0; //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
+				
 		if (maskHit1) // && !missRay1)
 		{
 			rayBatch.tMax[1] = rayBatch.t[1];
 			rayBatch.hasHit[1] = 1;
 			rayBatch.geometry[1] = this;
 		}
-		else
-			rayBatch.hasHit[1] = 0; //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		
+				
 		if (maskHit2) // && !missRay2)
 		{
 			rayBatch.tMax[2] = rayBatch.t[2];
 			rayBatch.hasHit[2] = 1;
 			rayBatch.geometry[2] = this;
 		}
-		else
-			rayBatch.hasHit[2] = 0;
-		
+				
 		if (maskHit3) // && !missRay3)
 		{
 			rayBatch.tMax[3] = rayBatch.t[3];
 			rayBatch.hasHit[3] = 1;
 			rayBatch.geometry[3] = this;
 		}
-		else
-			rayBatch.hasHit[3] = 0;
 	}		
 };
 
@@ -457,16 +441,6 @@ void initVec3Batch(Vec3Cluster4 &vec3Batch)
 		vec3Batch.x[i] = vec3Batch.y[i] = vec3Batch.z[i] = 0.0f;
 }
 
-void initVec3Batch(Vec3Cluster4 &vec3Batch, float x, float y, float z)
-{
-	for (int i = 0; i < 4; i++)
-	{
-		vec3Batch.x[i] = x;
-		vec3Batch.y[i] = y;
-		vec3Batch.z[i] = z;
-	}
-}
-
 void initVec3Batch(Vec3Cluster4 &vec3Batch, const Vec3 &v)
 {
 	for (int i = 0; i < 4; i++)
@@ -495,54 +469,6 @@ void initRayBatch(RayCluster4 &rayBatch)
 	{
 		rayBatch.ox[i] = rayBatch.oy[i] = rayBatch.oz[i] = 0;
 		rayBatch.dx[i] = rayBatch.dy[i] = rayBatch.dz[i] = 0;
-		rayBatch.t[i] = INT_MAX;
-		rayBatch.tMin[i] = 0.01;
-		rayBatch.tMax[i] = INT_MAX;
-		rayBatch.hasHit[i] = 0;
-	}
-}
-
-void initRayBatch(RayCluster4 &rayBatch,
-					float ox,
-					float oy,
-					float oz,
-					float dx,
-					float dy,
-					float dz)
-{
-	for (int i = 0; i < 4; i++)
-	{
-		rayBatch.ox[i] = ox;
-		rayBatch.oy[i] = oy;
-		rayBatch.oz[i] = oz;
-		rayBatch.dx[i] = dx;
-		rayBatch.dy[i] = dy;
-		rayBatch.dz[i] = dz;		
-		
-		rayBatch.t[i] = INT_MAX;
-		rayBatch.tMin[i] = 0.01;
-		rayBatch.tMax[i] = INT_MAX;
-		rayBatch.hasHit[i] = 0;
-	}
-}
-
-void initRayBatch(RayCluster4 &rayBatch,
-					float ox[4],
-					float oy[4],
-					float oz[4],
-					float dx[4],
-					float dy[4],
-					float dz[4])
-{
-	for (int i = 0; i < 4; i++)
-	{
-		rayBatch.ox[i] = ox[i];
-		rayBatch.oy[i] = oy[i];
-		rayBatch.oz[i] = oz[i];
-		rayBatch.dx[i] = dx[i];
-		rayBatch.dy[i] = dy[i];
-		rayBatch.dz[i] = dz[i];		
-		
 		rayBatch.t[i] = INT_MAX;
 		rayBatch.tMin[i] = 0.01;
 		rayBatch.tMax[i] = INT_MAX;
@@ -589,6 +515,14 @@ void initRayBatch(RayCluster4 &rayBatch, const Ray &r0, const Ray &r1, const Ray
 	}	
 }
 
+void resetRayBatchHitState(RayCluster4 &rayBatch)
+{
+	rayBatch.hasHit[0] = 0;
+	rayBatch.hasHit[1] = 0;
+	rayBatch.hasHit[2] = 0;
+	rayBatch.hasHit[3] = 0;
+}
+
 Ray getRayBatchData(const RayCluster4 &rayBatch, int index)
 {
 	Vec3 o(rayBatch.ox[index], rayBatch.oy[index], rayBatch.oz[index]);
@@ -604,45 +538,29 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 {
     Vec3 ambient(0.25, 0, 0);	// light red ambient light
 	float ambientIntensity = 0.25;
-	Vec3 bgColor = ambient * ambientIntensity;
-	Vec3 outColor(bgColor);	
+	Vec3 bgColor = ambient * ambientIntensity;		
 	Vec3 black;
 	
 	Vec3Cluster4 pixelColor4;
-	initVec3Batch(pixelColor4, black);
-
-	int i = 0;
-	int hitIndex[4] = {-1};
-	
+		
 	for (const auto &geo : scene)
-	{
-		geo->intersectsBatch(cameraRayBatch);
-		for (int j = 0; j < 4; j++) // loop through ray batch
-		{
-			if (cameraRayBatch.hasHit[j])
-			{
-				hitIndex[j] = i; // check this part - this is the index of the last object in the scene ///////////////////////////////////////////
-				// std::cout << geo->geoName << std::endl;
-			}
-		}
-        i++; // enumerates geometry
-	}		
+		geo->intersectsBatch(cameraRayBatch);		
+		
 	
 	for (int k = 0; k < 4; k++) // loop through ray batch
-	{		
+	{
+		Vec3 outColor(black);			
 		if (cameraRayBatch.hasHit[k])
 		{
-			/*
 			Ray cameraRay = getRayBatchData(cameraRayBatch, k);
 			Vec3 surf = cameraRay.o + cameraRay.d * cameraRay.tMax; // point of intersection
 			Vec3 L = (light->position - surf).getNormalized();
-			bool isOccluded = false;
-			*/
+			bool isOccluded = false;		
+
+
+			// outColor = cameraRayBatch.geometry[k]->color;// scene[hitIndex[k]]->color;
+			// updateVec3Batch(pixelColor4, k, outColor);			
 			
-			outColor = cameraRayBatch.geometry[k]->color;// scene[hitIndex[k]]->color;
-			updateVec3Batch(pixelColor4, k, outColor);
-			
-			/*
 			
 			// check for shadows
 			Ray shadowRay(surf, L);
@@ -654,91 +572,21 @@ Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<G
 				updateVec3Batch(pixelColor4, k, outColor);
 			else
 			{
-				Vec3 N = scene[hitIndex[k]]->getNormal(surf).getNormalized();
+				Vec3 N = cameraRayBatch.geometry[k]->getNormal(surf).getNormalized();
 				float diffuse = L.dot(N);
-				outColor = (colorModulate(light->color, scene[hitIndex[k]]->color) * diffuse) * light->intensity;
+				std::cout << "Diffuse: " << diffuse << std::endl;
+				// outColor = (colorModulate(light->color, cameraRayBatch.geometry[k]->color) * diffuse) * light->intensity;
+				// outColor.display();
+				outColor = cameraRayBatch.geometry[k]->color;
 				clamp(outColor);
 				updateVec3Batch(pixelColor4, k, outColor);
-			}
-			*/			
+			}						
 		}
+		else
+			updateVec3Batch(pixelColor4, k, outColor);
 	}
 	return pixelColor4;
 }
-/////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////
-void updatePixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light, Vec3Cluster4 &pixelColor4)
-{
-    Vec3 ambient(0.25, 0, 0);	// light red ambient light
-	float ambientIntensity = 0.25;
-	Vec3 bgColor = ambient * ambientIntensity;
-	Vec3 outColor(bgColor);	
-	Vec3 black;
-
-	initVec3Batch(pixelColor4, black);
-
-	int i = 0;
-	int hitIndex[4] = {-1};
-	
-	for (const auto &geo : scene)
-	{
-		geo->intersectsBatch(cameraRayBatch);
-		for (int j = 0; j < 4; j++) // loop through ray batch
-		{
-			if (cameraRayBatch.hasHit[j])
-				hitIndex[j] = i;
-			
-			// if (i == 0 || i == 1)
-				// std::cout << "Hit id " << i << std::endl;
-		}
-        i++; // enumerates geometry
-	}		
-	
-	for (int k = 0; k < 4; k++) // loop through ray batch
-	{		
-		if (cameraRayBatch.hasHit[k])
-		{
-			/*
-			Ray cameraRay = getRayBatchData(cameraRayBatch, k);
-			Vec3 surf = cameraRay.o + cameraRay.d * cameraRay.tMax; // point of intersection
-			Vec3 L = (light->position - surf).getNormalized();
-			bool isOccluded = false;
-			*/
-			
-			outColor = scene[hitIndex[k]]->color;
-			updateVec3Batch(pixelColor4, k, outColor);
-			
-			/*
-			
-			// check for shadows
-			Ray shadowRay(surf, L);
-			for (auto &geo : scene)
-				if (geo->intersects(shadowRay))
-					isOccluded = true;
-			
-			if (isOccluded)
-				updateVec3Batch(pixelColor4, k, outColor);
-			else
-			{
-				Vec3 N = scene[hitIndex[k]]->getNormal(surf).getNormalized();
-				float diffuse = L.dot(N);
-				outColor = (colorModulate(light->color, scene[hitIndex[k]]->color) * diffuse) * light->intensity;
-				clamp(outColor);
-				updateVec3Batch(pixelColor4, k, outColor);
-			}
-			*/			
-		}
-	}
-}
-
-/////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////
 
 void renderSIMD(Vec3 *fb,
 				Light *light,
