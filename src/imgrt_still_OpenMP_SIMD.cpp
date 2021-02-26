@@ -368,14 +368,14 @@ struct Sphere : public Geometry
 			rayBatch.geometry[1] = this;
 		}
 				
-		if (maskHit2) // && !missRay2)
+		if (maskHit2)
 		{
 			rayBatch.tMax[2] = rayBatch.t[2];
 			rayBatch.hasHit[2] = 1;
 			rayBatch.geometry[2] = this;
 		}
 				
-		if (maskHit3) // && !missRay3)
+		if (maskHit3)
 		{
 			rayBatch.tMax[3] = rayBatch.t[3];
 			rayBatch.hasHit[3] = 1;
