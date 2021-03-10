@@ -127,7 +127,7 @@ struct Ray
 	}
 };
 
-struct alignas(64) Vec3Cluster4
+struct alignas(64) Vec3Packet4
 {
 	float x[4];
 	float y[4];
@@ -137,7 +137,7 @@ struct alignas(64) Vec3Cluster4
 
 struct Geometry;
 
-struct alignas(64) RayCluster4
+struct alignas(64) RayPacket4
 {
 	float ox[4];
 	float oy[4];
@@ -164,7 +164,7 @@ struct Geometry
 
 	virtual ~Geometry() {}
 
-	virtual void intersectsBatch(RayCluster4 &rayBatch) const = 0;
+	virtual void intersectsBatch(RayPacket4 &rayBatch) const = 0;
 	virtual bool intersects(const Ray &ray) const = 0;
 	virtual Vec3 getNormal(const Vec3 &point) const = 0;
 };
@@ -210,7 +210,7 @@ struct Sphere : public Geometry
 			return false;
 	}
 	
-	virtual void intersectsBatch(RayCluster4 &rayBatch) const
+	virtual void intersectsBatch(RayPacket4 &rayBatch) const
 	{
 		// const float eps = 1e-4;
 		__m128 _eps = _mm_set1_ps(1e-4);
@@ -418,7 +418,7 @@ struct Plane : public Geometry
 			return false;
 	}
 	
-	virtual void intersectsBatch(RayCluster4 &rayBatch) const
+	virtual void intersectsBatch(RayPacket4 &rayBatch) const
 	{
 		// const float eps = 1e-4;
 		__m128 _eps = _mm_set1_ps(1e-4);
@@ -570,13 +570,13 @@ void clamp(Vec3 &col)
 	col.z = (col.z > 1) ? 1 : (col.z < 0) ? 0 : col.z;
 }
 
-void initVec3Batch(Vec3Cluster4 &vec3Batch)
+void initVec3Batch(Vec3Packet4 &vec3Batch)
 {
 	for (int i = 0; i < 4; i++)
 		vec3Batch.x[i] = vec3Batch.y[i] = vec3Batch.z[i] = 0.0f;
 }
 
-void initVec3Batch(Vec3Cluster4 &vec3Batch, const Vec3 &v)
+void initVec3Batch(Vec3Packet4 &vec3Batch, const Vec3 &v)
 {
 	for (int i = 0; i < 4; i++)
 	{
@@ -586,19 +586,19 @@ void initVec3Batch(Vec3Cluster4 &vec3Batch, const Vec3 &v)
 	}
 }
 
-void updateVec3Batch(Vec3Cluster4 &vec3Batch, int index, const Vec3 &v)
+void updateVec3Batch(Vec3Packet4 &vec3Batch, int index, const Vec3 &v)
 {
 	vec3Batch.x[index] = v.x;
 	vec3Batch.y[index] = v.y;
 	vec3Batch.z[index] = v.z;
 }
 
-Vec3 getVec3BatchData(const Vec3Cluster4 &vec3Batch, int index)
+Vec3 getVec3BatchData(const Vec3Packet4 &vec3Batch, int index)
 {
 	return Vec3(vec3Batch.x[index], vec3Batch.y[index], vec3Batch.z[index]);
 }
 
-void initRayBatch(RayCluster4 &rayBatch)
+void initRayBatch(RayPacket4 &rayBatch)
 {
 	for (int i = 0; i < 4; i++)
 	{
@@ -611,7 +611,7 @@ void initRayBatch(RayCluster4 &rayBatch)
 	}
 }
 
-void initRayBatch(RayCluster4 &rayBatch, const Ray &r0, const Ray &r1, const Ray &r2, const Ray &r3)
+void initRayBatch(RayPacket4 &rayBatch, const Ray &r0, const Ray &r1, const Ray &r2, const Ray &r3)
 {
 	rayBatch.ox[0] = r0.o.x;
 	rayBatch.oy[0] = r0.o.y;
@@ -650,7 +650,7 @@ void initRayBatch(RayCluster4 &rayBatch, const Ray &r0, const Ray &r1, const Ray
 	}	
 }
 
-Ray getRayBatchData(const RayCluster4 &rayBatch, int index)
+Ray getRayBatchData(const RayPacket4 &rayBatch, int index)
 {
 	Vec3 o(rayBatch.ox[index], rayBatch.oy[index], rayBatch.oz[index]);
 	Vec3 d(rayBatch.dx[index], rayBatch.dy[index], rayBatch.dz[index]);
@@ -661,14 +661,14 @@ Ray getRayBatchData(const RayCluster4 &rayBatch, int index)
 	return r;
 }
 
-Vec3Cluster4 getPixelColorBatch(RayCluster4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light)
+Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light)
 {
     Vec3 ambient(0.25, 0, 0);	// light red ambient light
 	float ambientIntensity = 0.25;
 	Vec3 bgColor = ambient * ambientIntensity;		
 	Vec3 black;
 	
-	Vec3Cluster4 pixelColor4;
+	Vec3Packet4 pixelColor4;
 		
 	for (const auto &geo : scene)
 		geo->intersectsBatch(cameraRayBatch);		
@@ -734,14 +734,14 @@ void renderSIMD(Vec3 *fb,
 				
 				for(int x = 0; x < width; x += 4)
 				{
-					Vec3Cluster4 pixelColor4;
+					Vec3Packet4 pixelColor4;
 					
 					Ray cameraRay0(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
 					Ray cameraRay1(Vec3(x + 1, y, 0), camera.direction); // camera ray from each pixel 
 					Ray cameraRay2(Vec3(x + 2, y, 0), camera.direction); // camera ray from each pixel 
 					Ray cameraRay3(Vec3(x + 3, y, 0), camera.direction); // camera ray from each pixel 
 					
-					RayCluster4 rayBatch;
+					RayPacket4 rayBatch;
 					initRayBatch(rayBatch, cameraRay0, cameraRay1, cameraRay2, cameraRay3);
 				
 					// int index = y * width + x;			
