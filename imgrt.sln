@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.1340
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31313.79
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "imgrt", "imgrt.vcxproj", "{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}"
 EndProject
@@ -9,6 +9,8 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release_Clang|x64 = Release_Clang|x64
+		Release_Clang|x86 = Release_Clang|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -17,6 +19,10 @@ Global
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Debug|x64.Build.0 = Debug|x64
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Debug|x86.ActiveCfg = Debug|Win32
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Debug|x86.Build.0 = Debug|Win32
+		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release_Clang|x64.ActiveCfg = Release_Clang|x64
+		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release_Clang|x64.Build.0 = Release_Clang|x64
+		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release_Clang|x86.ActiveCfg = Release_Clang|Win32
+		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release_Clang|x86.Build.0 = Release_Clang|Win32
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release|x64.ActiveCfg = Release|x64
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release|x64.Build.0 = Release|x64
 		{7346E973-0ED9-4F5E-A4EC-09E6E5CC2A48}.Release|x86.ActiveCfg = Release|Win32

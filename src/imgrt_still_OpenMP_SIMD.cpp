@@ -11,6 +11,7 @@
 #include <cstring>
 #include <algorithm>
 #include <immintrin.h>
+#include <random>
 #include "omp.h"
 
 
@@ -861,6 +862,19 @@ int main(int argc, char* argv[])
 	const Vec3 cyan(0, 1, 1);
 	const Vec3 magenta(1, 0, 1);
 	const Vec3 yellow(1, 1, 0);
+	
+	/////////////////////////////////////////////////////////////////////////////
+
+	// this bit fails to compile on Intel Classic Compiler 19.2 - probably a compiler/Visual Studio bug
+
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> rnd(0.0, 1.0);
+
+	float z = 2 * rnd(generator) - 1;
+	int r = std::round(3.75);
+	int s = std::ceil(2.75);
+
+	/////////////////////////////////////////////////////////////////////////////
 
     // setup multithreading and benchmark parameters
 
