@@ -90,7 +90,7 @@ struct Ray
 {
 	Vec3 o; // origin
 	Vec3 d; // direction
-    mutable float t;
+	mutable float t;
 	float tMin;
 	mutable float tMax;
 	
@@ -176,10 +176,10 @@ struct Sphere : public Geometry
 	float radius;
 
 	Sphere(const Vec3 &c, const float &rad, const Vec3 &col, const std::string &name_) : center(c), radius(rad)
-    {
-        color = col;
+	{
+		color = col;
 		geoName = name_;
-    }
+	}
 
 	~Sphere() {}
 	
@@ -391,10 +391,10 @@ struct Plane : public Geometry
 	Vec3 point; // a point on the plane
 	
 	Plane(const Vec3 &n, const Vec3 &p, const Vec3 &col, const std::string &name_) : normal(n), point(p)
-    {
-        color = col;
+	{
+		color = col;
 		geoName = name_;
-    }
+	}
 
 	~Plane() {}
 	
@@ -664,7 +664,7 @@ Ray getRayBatchData(const RayPacket4 &rayBatch, int index)
 
 Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light)
 {
-    Vec3 ambient(0.25, 0, 0);	// light red ambient light
+	Vec3 ambient(0.25, 0, 0);	// light red ambient light
 	float ambientIntensity = 0.25;
 	Vec3 bgColor = ambient * ambientIntensity;		
 	Vec3 black;
@@ -725,7 +725,7 @@ void renderSIMD(Vec3 *fb,
 				int nBenchLoops)
 {
 	for (int run = 0; run < nBenchLoops; run++)
-    {		
+	{		
 #pragma omp parallel num_threads(nThreads) shared(fb)
 		{
 #pragma omp for schedule(dynamic, 1)
@@ -760,12 +760,12 @@ void renderSIMD(Vec3 *fb,
 				}
 			}
 		}
-    }
+	}
 }
 
 Vec3 getPixelColor(Ray &cameraRay, const std::vector<Geometry*> &scene, const Light *light)
 {
-    Vec3 ambient(0.25, 0, 0);	// light red ambient light
+	Vec3 ambient(0.25, 0, 0);	// light red ambient light
 	double ambientIntensity = 0.25;
 	Vec3 pixelColor; // = ambient * ambientIntensity;
 	bool hitStatus = false;
@@ -778,7 +778,7 @@ Vec3 getPixelColor(Ray &cameraRay, const std::vector<Geometry*> &scene, const Li
 			hitStatus = true;		
 			hitIndex = i;
 		}
-        i++;
+		i++;
 	}
 
 	if (hitStatus)
@@ -812,19 +812,19 @@ void render(Vec3 *fb,
 				int nBenchLoops)
 {
 	for (int run = 0; run < nBenchLoops; run++)
-    {
+	{
 #pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1) 
-        for(int y = 0; y < height; y++)
-        {
-            for(int x = 0; x < width; x++)
-            {
-                size_t index = y * width + x;
-                Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
+		for(int y = 0; y < height; y++)
+		{
+			for(int x = 0; x < width; x++)
+			{
+				size_t index = y * width + x;
+				Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
 				
-                fb[index] = getPixelColor(cameraRay, scene, light);			
-            }
-        }
-    }	
+				fb[index] = getPixelColor(cameraRay, scene, light);			
+			}
+		}
+	}	
 }
 
 void saveImg(Vec3 *frameBuffer, int width, int height)
@@ -853,7 +853,7 @@ void cleanup(Vec3 **frameBuffer, Light **light, std::vector<Geometry*> &scene)
 
 int main(int argc, char* argv[])
 {
-    // colors (R, G, B)
+	// colors (R, G, B)
 	const Vec3 white(1, 1, 1);
 	const Vec3 black(0, 0, 0);
 	const Vec3 red(1, 0, 0);
@@ -865,7 +865,7 @@ int main(int argc, char* argv[])
 	
 	/////////////////////////////////////////////////////////////////////////////
 
-	// this bit fails to compile on Intel Classic Compiler 19.2 - probably a compiler/Visual Studio bug
+	// this bit fails to compile on Intel Classic Compiler 19.2 on Visual Studio 2019 16.9  - probably a compiler/Visual Studio bug
 
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> rnd(0.0, 1.0);
@@ -876,85 +876,85 @@ int main(int argc, char* argv[])
 
 	/////////////////////////////////////////////////////////////////////////////
 
-    // setup multithreading and benchmark parameters
+	// setup multithreading and benchmark parameters
 
-    int nBenchLoops = 1; 
-    int nThreads = 1;
-    bool isBenchmark = false;
+	int nBenchLoops = 1; 
+	int nThreads = 1;
+	bool isBenchmark = false;
 	bool useSIMD = false;
 	int height = 1080;
 	int width = 1920;
 
-    for (int i = 0; i < argc; i++) // process command line args
-    {
-        if (!strcmp(argv[i], "-mt")) // enables multithreading using OpenMP
-        {
-            std::cout << "Multithreaded rendering enabled.\n";
-            nThreads = std::thread::hardware_concurrency();
-        }
+	for (int i = 0; i < argc; i++) // process command line args
+	{
+		if (!strcmp(argv[i], "-mt")) // enables multithreading using OpenMP
+		{
+			std::cout << "Multithreaded rendering enabled.\n";
+			nThreads = std::thread::hardware_concurrency();
+		}
 		
 		if (!strcmp(argv[i], "-simd")) 
-        {
-            std::cout << "SIMD processing enabled.\n";
-            useSIMD = true;
-        }
+		{
+			std::cout << "SIMD processing enabled.\n";
+			useSIMD = true;
+		}
 		
 		if (!strcmp(argv[i], "-width")) // usage -width <width>
-        {
-            if (i + 1 < argc)
-                width = atoi(argv[i+1]); 
-            else
+		{
+			if (i + 1 < argc)
+				width = atoi(argv[i+1]); 
+			else
 			{
 				height = 1080;
 				width = 1920;
-                std::cout << "Resolution width value not provided. Using default value of 1920x1080 pixels.\n"; 
+				std::cout << "Resolution width value not provided. Using default value of 1920x1080 pixels.\n"; 
 			}				
-        }
+		}
 		
 		if (!strcmp(argv[i], "-height")) // usage -height <height>
-        {
-            if (i + 1 < argc)
-                height = atoi(argv[i+1]); 
-            else
+		{
+			if (i + 1 < argc)
+				height = atoi(argv[i+1]); 
+			else
 			{
 				height = 1080;
 				width = 1920;
-                std::cout << "Resolution height value not provided. Using default value of 1920x1080 pixels.\n";      
+				std::cout << "Resolution height value not provided. Using default value of 1920x1080 pixels.\n";      
 			}				
-        }
+		}
 
-        if (!strcmp(argv[i], "-bench")) // usage -bench <numberLoops>
-        {
-            isBenchmark = true;
-            if (i + 1 < argc)
-                nBenchLoops = atoi(argv[i+1]); // number of times to loop in benchmark mode
-            else
-            {
-                std::cout << "Benchmark loop count not provided.\n";
-                nBenchLoops = 5;
-            }            
-        }
-    } 
+		if (!strcmp(argv[i], "-bench")) // usage -bench <numberLoops>
+		{
+			isBenchmark = true;
+			if (i + 1 < argc)
+				nBenchLoops = atoi(argv[i+1]); // number of times to loop in benchmark mode
+			else
+			{
+				std::cout << "Benchmark loop count not provided.\n";
+				nBenchLoops = 5;
+			}            
+		}
+	} 
 
 	// setup camera, colors, objects and lights		
-    const int fbSize = height * width;
-    Vec3 *fb = new Vec3[fbSize]; 
+	const int fbSize = height * width;
+	Vec3 *fb = new Vec3[fbSize]; 
 
-    // scene objects and lights
-    std::vector<Geometry*> scene;
-    
-    scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0), "Red Sphere"));
-    scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1), "Blue Sphere"));
-    scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0), "Yellow Plane"));
-    scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1), "Cyan Sphere"));
+	// scene objects and lights
+	std::vector<Geometry*> scene;
+	
+	scene.push_back(new Sphere(Vec3(0.5 * width, 0.45 * height, 1000), 100, Vec3(1, 0, 0), "Red Sphere"));
+	scene.push_back(new Sphere(Vec3(0.65 * width, 0.2 * height, 600), 50, Vec3(0, 0, 1), "Blue Sphere"));
+	scene.push_back(new Plane(Vec3(0, 0, -1), Vec3(0.5 * width, 0.5 * height, 1500), Vec3(1, 1, 0), "Yellow Plane"));
+	scene.push_back(new Sphere(Vec3(0.5 * width, 0.52 * height, 700), 35, Vec3(0, 1, 1), "Cyan Sphere"));
 	
 	const Camera camera(Vec3(0.5 * width, 0.5 * height, 0), Vec3(0, 0, 1)); // scene camera	
 	Light *light = new Light(Vec3(0.8 * width, 0.25 * height, 100), 1, white, 0.75); // white scene light		    		
 	
-    if (isBenchmark)
-        std::cout << "Running in benchmark mode. Looping " << nBenchLoops << " times.\n";
+	if (isBenchmark)
+		std::cout << "Running in benchmark mode. Looping " << nBenchLoops << " times.\n";
 
-    std::cout << "Rendering...\n";
+	std::cout << "Rendering...\n";
 	auto start = std::chrono::high_resolution_clock::now();
 
 	if (useSIMD)
@@ -963,13 +963,13 @@ int main(int argc, char* argv[])
 		render(fb, light, scene, nThreads, camera, width, height, isBenchmark, nBenchLoops);
 
 	auto stop = std::chrono::high_resolution_clock::now(); 
-    auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
 
-    std::cout << "Rendering finished successfully.\n";
-    std::cout << "\nTime taken to render was " << diff.count() << " milliseconds." << std::endl; 
+	std::cout << "Rendering finished successfully.\n";
+	std::cout << "\nTime taken to render was " << diff.count() << " milliseconds." << std::endl; 
 
 	if (!isBenchmark)
 		saveImg(fb, width, height);
-    
+	
 	cleanup(&fb, &light, scene);
 }
