@@ -865,8 +865,8 @@ int main(int argc, char* argv[])
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-	// this bit fails to compile on Intel Classic Compiler 19.2 under Visual Studio 2019 16.9.6
-	// but works fine on Intel Classic Compiler 19.2 under Visual Studio 2017
+	// this bit fails to compile on Intel Classic Compiler 19.2 under Visual Studio 2019 v16.9.6
+	// but works fine on Intel Classic Compiler 19.2 under Visual Studio 2017 v15.9.31
 	// probably a compiler/Visual Studio bug
 
 	std::default_random_engine generator;
