@@ -1,3 +1,21 @@
+/* 
+
+This piece of code implements a simple ray tracer that used SIMD instructions to perform batched ray tracing where each primitive in the
+scene is tested for intersection against 4 rays. Even though we have struct here to represent geometry in an object oriented approach,
+we also have collections of objects in the so called data oriented design. This type of structure is more suited to optimal utilization
+of CPU resources like cache memory.
+
+For more information on the subject, please watch the seminal video on the matter by Mike Acton: https://www.youtube.com/watch?v=rX0ItVEVjHc 
+
+NOTE:
+----
+To compile the program make sure your the compiler flags to generate vector code for your processor specific architecture 
+is enabled. The SIMD instructions used here need at least SSE4.1 to run. I have tested on GCC 9.3.0 with
+the flags "-fopenmp -pthread -O3 -std=c++11 -msse4.1" to enable and/or link OpenMP, pthreads, full optimizations, C++11 threads
+and SSE4.1 instruction set respectively.
+
+*/
+
 #include <fstream>
 #include <cmath>
 #include <iostream> 
