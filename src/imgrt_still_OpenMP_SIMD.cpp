@@ -758,36 +758,36 @@ void renderSIMD(Vec3 *fb,
 	for (int run = 0; run < nBenchLoops; run++)
 	{		
 #pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1)
-			for(int y = 0; y < height; y++)
+		for(int y = 0; y < height; y++)
+		{
+			int yw = y * width;
+			
+			for(int x = 0; x < width; x += 4)
 			{
-				int yw = y * width;
+				Vec3Packet4 pixelColor4;
 				
-				for(int x = 0; x < width; x += 4)
-				{
-					Vec3Packet4 pixelColor4;
-					
-					Ray cameraRay0(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
-					Ray cameraRay1(Vec3(x + 1, y, 0), camera.direction); // camera ray from each pixel 
-					Ray cameraRay2(Vec3(x + 2, y, 0), camera.direction); // camera ray from each pixel 
-					Ray cameraRay3(Vec3(x + 3, y, 0), camera.direction); // camera ray from each pixel 
-					
-					RayPacket4 rayBatch;
-					initRayBatch(rayBatch, cameraRay0, cameraRay1, cameraRay2, cameraRay3);
+				Ray cameraRay0(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
+				Ray cameraRay1(Vec3(x + 1, y, 0), camera.direction); // camera ray from each pixel 
+				Ray cameraRay2(Vec3(x + 2, y, 0), camera.direction); // camera ray from each pixel 
+				Ray cameraRay3(Vec3(x + 3, y, 0), camera.direction); // camera ray from each pixel 
 				
-					// int index = y * width + x;			
-					int index0 = yw + x; // y * width + x
-					int index1 = yw + x + 1; // y * width + (x + 1)
-					int index2 = yw + x + 2; // y * width + (x + 2)
-					int index3 = yw + x + 3; // y * width + (x + 3)							
-					
-					pixelColor4 = getPixelColorBatch(rayBatch, scene, light);	
-					
-					fb[index0] = getVec3BatchData(pixelColor4, 0);	
-					fb[index1] = getVec3BatchData(pixelColor4, 1);	
-					fb[index2] = getVec3BatchData(pixelColor4, 2);
-					fb[index3] = getVec3BatchData(pixelColor4, 3);
-				}
+				RayPacket4 rayBatch;
+				initRayBatch(rayBatch, cameraRay0, cameraRay1, cameraRay2, cameraRay3);
+			
+				// int index = y * width + x;			
+				int index0 = yw + x; // y * width + x
+				int index1 = yw + x + 1; // y * width + (x + 1)
+				int index2 = yw + x + 2; // y * width + (x + 2)
+				int index3 = yw + x + 3; // y * width + (x + 3)							
+				
+				pixelColor4 = getPixelColorBatch(rayBatch, scene, light);	
+				
+				fb[index0] = getVec3BatchData(pixelColor4, 0);	
+				fb[index1] = getVec3BatchData(pixelColor4, 1);	
+				fb[index2] = getVec3BatchData(pixelColor4, 2);
+				fb[index3] = getVec3BatchData(pixelColor4, 3);
 			}
+		}
 	}
 }
 
