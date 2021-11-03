@@ -757,9 +757,7 @@ void renderSIMD(Vec3 *fb,
 {
 	for (int run = 0; run < nBenchLoops; run++)
 	{		
-#pragma omp parallel num_threads(nThreads) shared(fb)
-		{
-#pragma omp for schedule(dynamic, 1)
+#pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1)
 			for(int y = 0; y < height; y++)
 			{
 				int yw = y * width;
@@ -790,7 +788,6 @@ void renderSIMD(Vec3 *fb,
 					fb[index3] = getVec3BatchData(pixelColor4, 3);
 				}
 			}
-		}
 	}
 }
 
