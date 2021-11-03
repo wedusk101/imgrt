@@ -1,18 +1,20 @@
 /* 
 
-This piece of code implements a simple ray tracer that uses SIMD instructions to perform batched ray tracing where each primitive in the
-scene is tested for intersection against 4 rays at a time. Even though we have struct here to represent geometry in an object oriented 
-approach, we also have collections of objects in the so called data oriented design. This type of structure is more suited to optimal 
-utilization of CPU resources like cache memory.
+This piece of code implements a simple ray tracer that uses SIMD instructions to perform batched
+ray tracing whereeach primitive in thescene is tested for intersection against 4 rays at a time.
+Even though we have struct here to represent geometry in an object oriented approach, we also have
+collections of objects in the so called data oriented design. This type of structure is more suited
+to optimal utilization of CPU resources like cache memory.
 
-For more information on the subject, please watch the seminal video on the matter by Mike Acton: https://www.youtube.com/watch?v=rX0ItVEVjHc 
+For more information on the subject, please watch the seminal video on the matter by Mike Acton:
+https://www.youtube.com/watch?v=rX0ItVEVjHc 
 
 NOTE:
 ----
-To compile the program make sure you set the compiler flags to generate vector code for your processor specific architecture 
-is enabled. The SIMD instructions used here need at least SSE4.1 to run. I have tested on GCC 9.3.0 with
-the flags "-fopenmp -pthread -O3 -std=c++11 -msse4.1" to enable and/or link OpenMP, pthreads, full optimizations, C++11 threads
-and SSE4.1 instruction set respectively.
+To compile the program make sure you set the compiler flags to generate vector code for your processor
+specific architecture is enabled. The SIMD instructions used here need at least SSE4.1 to run. I have
+tested on GCC 9.3.0 with the flags "-fopenmp -pthread -O3 -std=c++11 -msse4.1" to enable and/or link
+OpenMP, pthreads, full optimizations, C++11 threads and SSE4.1 instruction set respectively.
 
 Resources on SIMD intrinsics:
 ----------------------------
@@ -831,14 +833,14 @@ Vec3 getPixelColor(Ray &cameraRay, const std::vector<Geometry*> &scene, const Li
 }
 
 void render(Vec3 *fb,
-				Light *light,
-				const std::vector<Geometry*> &scene,			
-				int nThreads,
-				const Camera &camera,
-				int width,
-				int height,
-				bool isBenchmark,
-				int nBenchLoops)
+			Light *light,
+			const std::vector<Geometry*> &scene,			
+			int nThreads,
+			const Camera &camera,
+			int width,
+			int height,
+			bool isBenchmark,
+			int nBenchLoops)
 {
 	for (int run = 0; run < nBenchLoops; run++)
 	{
@@ -894,6 +896,8 @@ int main(int argc, char* argv[])
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+	/*
+	
 	// this bit fails to compile on Intel Classic Compiler 19.2 under Visual Studio 2019 v16.9.6
 	// but works fine on Intel Classic Compiler 19.2 under Visual Studio 2017 v15.9.31
 	// probably a compiler/Visual Studio bug
@@ -904,6 +908,8 @@ int main(int argc, char* argv[])
 	float z = 2 * rnd(generator) - 1;
 	int r = std::round(3.75);
 	int s = std::ceil(2.75);
+	
+	*/
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
