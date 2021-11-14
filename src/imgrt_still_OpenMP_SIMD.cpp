@@ -625,6 +625,14 @@ void updateVec3Batch(Vec3Packet4 &vec3Batch, int index, const Vec3 &v)
 	vec3Batch.z[index] = v.z;
 }
 
+void initVec3Batch(Vec3Packet4 &vec3Batch, const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec3 &v3)
+{
+	updateVec3Batch(vec3Batch, 0, v0);
+	updateVec3Batch(vec3Batch, 1, v1);
+	updateVec3Batch(vec3Batch, 2, v2);
+	updateVec3Batch(vec3Batch, 3, v3);
+}
+
 Vec3 getVec3BatchData(const Vec3Packet4 &vec3Batch, int index)
 {
 	return Vec3(vec3Batch.x[index], vec3Batch.y[index], vec3Batch.z[index]);
@@ -701,10 +709,43 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	Vec3 black;
 	
 	Vec3Packet4 pixelColor4;
-		
+	
+	// primary intersection tests	
 	for (const auto &geo : scene)
-		geo->intersectsBatch(cameraRayBatch);		
+		geo->intersectsBatch(cameraRayBatch);	
 		
+	Vec3Packet4 outColor4;
+	Vec3Packet4 surf4;
+	initVec3Batch(surf4,
+	
+	Ray cameraRay0 = getRayBatchData(cameraRayBatch, 0);
+	Ray cameraRay1 = getRayBatchData(cameraRayBatch, 1);
+	Ray cameraRay2 = getRayBatchData(cameraRayBatch, 2);
+	Ray cameraRay3 = getRayBatchData(cameraRayBatch, 3);
+	
+	Vec3 surf0 = cameraRay0.o + cameraRay0.d * cameraRay0.tMax;
+	Vec3 surf1 = cameraRay1.o + cameraRay1.d * cameraRay1.tMax;
+	Vec3 surf2 = cameraRay2.o + cameraRay2.d * cameraRay2.tMax;
+	Vec3 surf3 = cameraRay3.o + cameraRay3.d * cameraRay3.tMax;
+	
+	Vec3 L0 = (light->position - surf0).getNormalized();
+	Vec3 L1 = (light->position - surf1).getNormalized();
+	Vec3 L2 = (light->position - surf2).getNormalized();
+	Vec3 L3 = (light->position - surf3).getNormalized();
+	
+	Ray shadowRay0(surf0, L0);
+	Ray shadowRay1(surf1, L1);
+	Ray shadowRay2(surf2, L2);
+	Ray shadowRay3(surf3, L3);
+	
+	RayPacket4 shadowRayBatch;
+	initRayBatch(shadowRayBatch, shadowRay0, shadowRay1, shadowRay2, shadowRay3);
+	
+	// shadow intersection tests
+	for (const auto &geo : scene)
+		geo->intersectsBatch(shadowRayBatch);				  
+		
+	/*
 	
 	for (int k = 0; k < 4; k++) // loop through ray batch
 	{
@@ -742,6 +783,11 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 		else
 			updateVec3Batch(pixelColor4, k, outColor);
 	}
+	
+	*/
+	
+	
+	
 	return pixelColor4;
 }
 
