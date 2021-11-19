@@ -633,6 +633,23 @@ void initVec3Batch(Vec3Packet4 &vec3Batch, const Vec3 &v0, const Vec3 &v1, const
 	updateVec3Batch(vec3Batch, 3, v3);
 }
 
+void multiplyVec3Batch(Vec3Packet4 &vec3Batch, float c)
+{
+	__m128 _x4 = _mm_loadu_ps(&vec3Batch.x[0]);
+	__m128 _y4 = _mm_loadu_ps(&vec3Batch.y[0]);
+	__m128 _z4 = _mm_loadu_ps(&vec3Batch.z[0]);
+	
+	__m128 _const4 = _mm_set_ps1(c);
+	
+	__m128 _xc4 = _mm_mul_ps(_x4, _const4);
+	__m128 _yc4 = _mm_mul_ps(_y4, _const4);
+	__m128 _zc4 = _mm_mul_ps(_z4, _const4);
+	
+	_mm_storeu_ps(&vec3Batch.x[0], _xc4);
+	_mm_storeu_ps(&vec3Batch.y[0], _yc4);
+	_mm_storeu_ps(&vec3Batch.z[0], _zc4);	
+}
+
 Vec3 getVec3BatchData(const Vec3Packet4 &vec3Batch, int index)
 {
 	return Vec3(vec3Batch.x[index], vec3Batch.y[index], vec3Batch.z[index]);
@@ -713,21 +730,25 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	// primary intersection tests	
 	for (const auto &geo : scene)
 		geo->intersectsBatch(cameraRayBatch);	
+	
+	__m128 _hitMask = _mm_loadu_ps(&cameraRayBatch.hasHit[0]);
 		
 	Vec3Packet4 outColor4;
 	Vec3Packet4 surf4;
-	initVec3Batch(surf4,
+	initVec3Batch(surf4);
 	
 	Ray cameraRay0 = getRayBatchData(cameraRayBatch, 0);
 	Ray cameraRay1 = getRayBatchData(cameraRayBatch, 1);
 	Ray cameraRay2 = getRayBatchData(cameraRayBatch, 2);
 	Ray cameraRay3 = getRayBatchData(cameraRayBatch, 3);
 	
+	// points of intersection
 	Vec3 surf0 = cameraRay0.o + cameraRay0.d * cameraRay0.tMax;
 	Vec3 surf1 = cameraRay1.o + cameraRay1.d * cameraRay1.tMax;
 	Vec3 surf2 = cameraRay2.o + cameraRay2.d * cameraRay2.tMax;
 	Vec3 surf3 = cameraRay3.o + cameraRay3.d * cameraRay3.tMax;
 	
+	// light vector from the points of intersection
 	Vec3 L0 = (light->position - surf0).getNormalized();
 	Vec3 L1 = (light->position - surf1).getNormalized();
 	Vec3 L2 = (light->position - surf2).getNormalized();
@@ -743,50 +764,47 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	
 	// shadow intersection tests
 	for (const auto &geo : scene)
-		geo->intersectsBatch(shadowRayBatch);				  
-		
-	/*
+		geo->intersectsBatch(shadowRayBatch);
+
+	__m128 _shadowMask = _mm_loadu_ps(&shadowRayBatch.hasHit[0]);
 	
-	for (int k = 0; k < 4; k++) // loop through ray batch
-	{
-		Vec3 outColor(black);			
-		if (cameraRayBatch.hasHit[k])
-		{
-			Ray cameraRay = getRayBatchData(cameraRayBatch, k);
-			Vec3 surf = cameraRay.o + cameraRay.d * cameraRay.tMax; // point of intersection
-			Vec3 L = (light->position - surf).getNormalized();
-			bool isOccluded = false;				
-			
-			// check for shadows
-			Ray shadowRay(surf, L);
-			for (auto &geo : scene)
-			{
-				if (geo->intersects(shadowRay))
-				{
-					isOccluded = true;
-					break;
-				}	
-			}
-			
-			if (isOccluded)
-				updateVec3Batch(pixelColor4, k, outColor);
-			else
-			{
-				Vec3 N = (cameraRayBatch.geometry[k]->getNormal(surf)).getNormalized();
-				float diffuse = std::max(0.0f, L.dot(N));
-				outColor = (colorModulate(light->color, cameraRayBatch.geometry[k]->color) * diffuse) * light->intensity;				
-				clamp(outColor);
-				updateVec3Batch(pixelColor4, k, outColor);
-			}	
-			
-		}
-		else
-			updateVec3Batch(pixelColor4, k, outColor);
-	}
+	// normals at points of intersection
+	Vec3 N0  = (cameraRayBatch.geometry[0]->getNormal(surf0)).getNormalized();
+	Vec3 N1  = (cameraRayBatch.geometry[1]->getNormal(surf1)).getNormalized();
+	Vec3 N2  = (cameraRayBatch.geometry[2]->getNormal(surf2)).getNormalized();
+	Vec3 N3  = (cameraRayBatch.geometry[3]->getNormal(surf3)).getNormalized();
 	
-	*/
+	float diffuse0 = std::max(0.0f, L0.dot(N0));
+	float diffuse1 = std::max(0.0f, L1.dot(N1));
+	float diffuse2 = std::max(0.0f, L2.dot(N2));
+	float diffuse3 = std::max(0.0f, L3.dot(N3));
 	
+	Vec3 outColor0 = (colorModulate(light->color, cameraRayBatch.geometry[0]->color) * diffuse0) * light->intensity;
+	Vec3 outColor1 = (colorModulate(light->color, cameraRayBatch.geometry[1]->color) * diffuse1) * light->intensity;
+	Vec3 outColor2 = (colorModulate(light->color, cameraRayBatch.geometry[2]->color) * diffuse2) * light->intensity;
+	Vec3 outColor3 = (colorModulate(light->color, cameraRayBatch.geometry[3]->color) * diffuse3) * light->intensity;
 	
+	clamp(outColor0);
+	clamp(outColor1);
+	clamp(outColor2);
+	clamp(outColor3);
+	
+	updateVec3Batch(pixelColor4, 0 , outColor0);
+	updateVec3Batch(pixelColor4, 1 , outColor1);
+	updateVec3Batch(pixelColor4, 2 , outColor2);
+	updateVec3Batch(pixelColor4, 3 , outColor3);	
+	
+	// update regions which had no intersections
+	multiplyVec3Batch(pixelColor4, cameraRayBatch.hasHit[0]);
+	multiplyVec3Batch(pixelColor4, cameraRayBatch.hasHit[1]);
+	multiplyVec3Batch(pixelColor4, cameraRayBatch.hasHit[2]);
+	multiplyVec3Batch(pixelColor4, cameraRayBatch.hasHit[3]);
+	
+	// update shadowed regions
+	multiplyVec3Batch(pixelColor4, static_cast<int>(shadowRayBatch.hasHit[0]) ^ 1);
+	multiplyVec3Batch(pixelColor4, static_cast<int>(shadowRayBatch.hasHit[1]) ^ 1);
+	multiplyVec3Batch(pixelColor4, static_cast<int>(shadowRayBatch.hasHit[2]) ^ 1);
+	multiplyVec3Batch(pixelColor4, static_cast<int>(shadowRayBatch.hasHit[3]) ^ 1);
 	
 	return pixelColor4;
 }
@@ -859,7 +877,7 @@ Vec3 getPixelColor(Ray &cameraRay, const std::vector<Geometry*> &scene, const Li
 	{
 		Vec3 surf = cameraRay.o + cameraRay.d * cameraRay.tMax; // point of intersection
 		Vec3 L = (light->position - surf).getNormalized();
-		
+
 		// check for shadows
 		Ray shadowRay(surf, L);
 		for (auto &geo : scene)
