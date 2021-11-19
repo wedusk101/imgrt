@@ -1,8 +1,8 @@
 /* 
 
 This piece of code implements a simple ray tracer that uses SIMD instructions to perform batched
-ray tracing whereeach primitive in thescene is tested for intersection against 4 rays at a time.
-Even though we have struct here to represent geometry in an object oriented approach, we also have
+ray tracing where each primitive in the scene is tested for intersection against 4 rays at a time.
+Even though we have structs here to represent geometry in an object oriented approach, we also have
 collections of objects in the so called data oriented design. This type of structure is more suited
 to optimal utilization of CPU resources like cache memory.
 
@@ -12,7 +12,7 @@ https://www.youtube.com/watch?v=rX0ItVEVjHc
 NOTE:
 ----
 To compile the program make sure you set the compiler flags to generate vector code for your processor
-specific architecture is enabled. The SIMD instructions used here need at least SSE4.1 to run. I have
+architecture. The SIMD instructions used here need at least SSE4.1 to run. I have
 tested on GCC 9.3.0 with the flags "-fopenmp -pthread -O3 -std=c++11 -msse4.1" to enable and/or link
 OpenMP, pthreads, full optimizations, C++11 threads and SSE4.1 instruction set respectively.
 
@@ -604,18 +604,21 @@ void clamp(Vec3 &col)
 
 void initVec3Batch(Vec3Packet4 &vec3Batch)
 {
-	for (int i = 0; i < 4; i++)
-		vec3Batch.x[i] = vec3Batch.y[i] = vec3Batch.z[i] = 0.0f;
+	__m128 _zero = _mm_setzero_ps();
+	_mm_storeu_ps(&vec3Batch.x[0], _zero);
+	_mm_storeu_ps(&vec3Batch.y[0], _zero);
+	_mm_storeu_ps(&vec3Batch.z[0], _zero);
 }
 
 void initVec3Batch(Vec3Packet4 &vec3Batch, const Vec3 &v)
 {
-	for (int i = 0; i < 4; i++)
-	{
-		vec3Batch.x[i] = v.x;
-		vec3Batch.y[i] = v.y;
-		vec3Batch.z[i] = v.z;
-	}
+	__m128 _vx = _mm_set1_ps(v.x);
+	__m128 _vy = _mm_set1_ps(v.y);
+	__m128 _vz = _mm_set1_ps(v.z);
+	
+	_mm_storeu_ps(&vec3Batch.x[0], _vx);
+	_mm_storeu_ps(&vec3Batch.y[0], _vy);
+	_mm_storeu_ps(&vec3Batch.z[0], _vz);
 }
 
 void updateVec3Batch(Vec3Packet4 &vec3Batch, int index, const Vec3 &v)
@@ -639,8 +642,7 @@ void multiplyVec3Batch(Vec3Packet4 &vec3Batch, float c)
 	__m128 _y4 = _mm_loadu_ps(&vec3Batch.y[0]);
 	__m128 _z4 = _mm_loadu_ps(&vec3Batch.z[0]);
 	
-	__m128 _const4 = _mm_set_ps1(c);
-	
+	__m128 _const4 = _mm_set_ps1(c);	
 	__m128 _xc4 = _mm_mul_ps(_x4, _const4);
 	__m128 _yc4 = _mm_mul_ps(_y4, _const4);
 	__m128 _zc4 = _mm_mul_ps(_z4, _const4);
@@ -657,15 +659,23 @@ Vec3 getVec3BatchData(const Vec3Packet4 &vec3Batch, int index)
 
 void initRayBatch(RayPacket4 &rayBatch)
 {
-	for (int i = 0; i < 4; i++)
-	{
-		rayBatch.ox[i] = rayBatch.oy[i] = rayBatch.oz[i] = 0;
-		rayBatch.dx[i] = rayBatch.dy[i] = rayBatch.dz[i] = 0;
-		rayBatch.t[i] = INT_MAX;
-		rayBatch.tMin[i] = 0.01;
-		rayBatch.tMax[i] = INT_MAX;
-		rayBatch.hasHit[i] = 0;
-	}
+	__m128 _zero = _mm_setzero_ps();	
+	_mm_storeu_ps(&rayBatch.ox[0], _zero);
+	_mm_storeu_ps(&rayBatch.oy[0], _zero);
+	_mm_storeu_ps(&rayBatch.oz[0], _zero);
+	
+	_mm_storeu_ps(&rayBatch.dx[0], _zero);
+	_mm_storeu_ps(&rayBatch.dy[0], _zero);
+	_mm_storeu_ps(&rayBatch.dz[0], _zero);
+	
+	__m128 _tmax = _mm_set1_ps(INT_MAX);	
+	_mm_storeu_ps(&rayBatch.t[0], _tmax);
+	_mm_storeu_ps(&rayBatch.tMax[0], _tmax);
+	
+	__m128 _tmin = _mm_set1_ps(0.01);
+	_mm_storeu_ps(&rayBatch.tMin[0], _tmin);
+	
+	_mm_storeu_ps(&rayBatch.hasHit[0], _zero);	
 }
 
 void initRayBatch(RayPacket4 &rayBatch, const Ray &r0, const Ray &r1, const Ray &r2, const Ray &r3)
@@ -698,13 +708,15 @@ void initRayBatch(RayPacket4 &rayBatch, const Ray &r0, const Ray &r1, const Ray 
 	rayBatch.dy[3] = r3.d.y;
 	rayBatch.dz[3] = r3.d.z;
 	
-	for (int i = 0; i < 4; i++)
-	{
-		rayBatch.t[i] = INT_MAX;
-		rayBatch.tMin[i] = 0.01;
-		rayBatch.tMax[i] = INT_MAX;
-		rayBatch.hasHit[i] = 0;
-	}	
+	__m128 _tmax = _mm_set1_ps(INT_MAX);	
+	_mm_storeu_ps(&rayBatch.t[0], _tmax);
+	_mm_storeu_ps(&rayBatch.tMax[0], _tmax);
+	
+	__m128 _tmin = _mm_set1_ps(0.01);
+	_mm_storeu_ps(&rayBatch.tMin[0], _tmin);
+	
+	__m128 _zero = _mm_setzero_ps();
+	_mm_storeu_ps(&rayBatch.hasHit[0], _zero);
 }
 
 Ray getRayBatchData(const RayPacket4 &rayBatch, int index)
@@ -731,8 +743,6 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	for (const auto &geo : scene)
 		geo->intersectsBatch(cameraRayBatch);	
 	
-	__m128 _hitMask = _mm_loadu_ps(&cameraRayBatch.hasHit[0]);
-		
 	Vec3Packet4 outColor4;
 	Vec3Packet4 surf4;
 	initVec3Batch(surf4);
@@ -766,8 +776,6 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	for (const auto &geo : scene)
 		geo->intersectsBatch(shadowRayBatch);
 
-	__m128 _shadowMask = _mm_loadu_ps(&shadowRayBatch.hasHit[0]);
-	
 	// normals at points of intersection
 	Vec3 N0  = (cameraRayBatch.geometry[0]->getNormal(surf0)).getNormalized();
 	Vec3 N1  = (cameraRayBatch.geometry[1]->getNormal(surf1)).getNormalized();
@@ -789,6 +797,7 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	clamp(outColor2);
 	clamp(outColor3);
 	
+	// write out pixel values
 	updateVec3Batch(pixelColor4, 0 , outColor0);
 	updateVec3Batch(pixelColor4, 1 , outColor1);
 	updateVec3Batch(pixelColor4, 2 , outColor2);
@@ -955,25 +964,6 @@ int main(int argc, char* argv[])
 	const Vec3 magenta(1, 0, 1);
 	const Vec3 yellow(1, 1, 0);
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	/*
-	
-	// this bit fails to compile on Intel Classic Compiler 19.2 under Visual Studio 2019 v16.9.6
-	// but works fine on Intel Classic Compiler 19.2 under Visual Studio 2017 v15.9.31
-	// probably a compiler/Visual Studio bug
-
-	std::default_random_engine generator;
-	std::uniform_real_distribution<float> rnd(0.0, 1.0);
-
-	float z = 2 * rnd(generator) - 1;
-	int r = std::round(3.75);
-	int s = std::ceil(2.75);
-	
-	*/
-
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 	// setup multithreading and benchmark parameters
 
 	int nBenchLoops = 1; 
