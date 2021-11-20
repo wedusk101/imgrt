@@ -95,6 +95,22 @@ struct Vec3
 		return Vec3(y * v.z - v.y * z, z * v.x - x * v.z, x * v.y - y * v.x);
 	}
 	
+	Vec3& operator+=(const Vec3 &v)
+	{
+		x += v.x;
+		y += v.y;
+		z += v.z;
+		return *this;
+	}
+	
+	Vec3& operator/=(const float c)
+	{
+		x /= c;
+		y /= c;
+		z /= c;
+		return *this;
+	}
+	
 	float dot(const Vec3 &v) const // dot product
 	{
 		return x * v.x + y * v.y + z * v.z;
@@ -157,6 +173,14 @@ struct Ray
 		std::cout << "tMax: " << tMax << std::endl;		
 		std::cout << "\n\n";
 	}
+};
+
+struct RaySample
+{
+	RaySample() : x(0), y(0) {}
+	
+	float x;
+	float y;
 };
 
 struct alignas(64) Vec3Packet4
@@ -687,6 +711,25 @@ __m128 dotVec3batch(const Vec3Packet4 &a, const Vec3Packet4 &b)
 	return _dot4;	
 }
 
+void accumulateVec3Batch(Vec3Packet4 &out, const Vec3Packet4 &in)
+{
+	__m128 _outx = _mm_loadu_ps(&out.x[0]);
+	__m128 _outy = _mm_loadu_ps(&out.y[0]);
+	__m128 _outz = _mm_loadu_ps(&out.z[0]);
+	
+	__m128 _inx = _mm_loadu_ps(&in.x[0]);
+	__m128 _iny = _mm_loadu_ps(&in.y[0]);
+	__m128 _inz = _mm_loadu_ps(&in.z[0]);
+	
+	_outx = _mm_add_ps(_outx, _inx);
+	_outy = _mm_add_ps(_outy, _iny);
+	_outz = _mm_add_ps(_outz, _inz);
+	
+	_mm_storeu_ps(&out.x[0], _outx);
+	_mm_storeu_ps(&out.y[0], _outy);
+	_mm_storeu_ps(&out.z[0], _outz);
+}
+
 void initRayBatch(RayPacket4 &rayBatch)
 {
 	__m128 _zero = _mm_setzero_ps();	
@@ -788,6 +831,17 @@ Vec3Packet4 getPointsFromRayBatch(const RayPacket4 &rayBatch)
 	return point4;
 }
 
+RaySample getSample(const uint32_t& pixelX,
+	                const uint32_t& pixelY,
+	                std::default_random_engine& generator)
+{
+	RaySample sample;
+	std::uniform_real_distribution<float> rnd(0.0, 1.0);
+	sample.x = (float) pixelX + rnd(generator);
+	sample.y = (float) pixelY + rnd(generator);
+	return sample;
+}						
+
 Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light)
 {
 	Vec3 ambient(0.25, 0, 0);	// light red ambient light
@@ -832,6 +886,7 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	Vec3 N2  = (cameraRayBatch.geometry[2]->getNormal(surf2)).getNormalized();
 	Vec3 N3  = (cameraRayBatch.geometry[3]->getNormal(surf3)).getNormalized();
 	
+	// shading
 	float diffuse[4];	
 	diffuse[0] = std::max(0.0f, L0.dot(N0));
 	diffuse[1] = std::max(0.0f, L1.dot(N1));
@@ -877,39 +932,59 @@ void renderSIMD(Vec3 *fb,
 				int width,
 				int height,
 				bool isBenchmark,
+				int nSamples,
 				int nBenchLoops)
 {
 	for (int run = 0; run < nBenchLoops; run++)
-	{		
-#pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1)
-		for(int y = 0; y < height; y++)
+	{
+		float invSPP = 1./ nSamples;
+		
+#pragma omp parallel num_threads(nThreads) shared(fb) 
 		{
-			int yw = y * width;
+			std::default_random_engine generator;
+			RaySample sample;
 			
-			for(int x = 0; x < width; x += 4)
-			{
-				Vec3Packet4 pixelColor4;
+#pragma omp for schedule(dynamic, 1) 
+			for(int y = 0; y < height; y++)
+			{				
+				for(int x = 0; x < width; x += 4)
+				{
+					// calculate indices into framebuffer			
+					int index0 = y * width + x; 
+					int index1 = y * width + x + 1; 
+					int index2 = y * width + x + 2; 
+					int index3 = y * width + x + 3;
 				
-				Ray cameraRay0(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
-				Ray cameraRay1(Vec3(x + 1, y, 0), camera.direction); // camera ray from each pixel 
-				Ray cameraRay2(Vec3(x + 2, y, 0), camera.direction); // camera ray from each pixel 
-				Ray cameraRay3(Vec3(x + 3, y, 0), camera.direction); // camera ray from each pixel 
-				
-				RayPacket4 rayBatch;
-				initRayBatch(rayBatch, cameraRay0, cameraRay1, cameraRay2, cameraRay3);
-			
-				// int index = y * width + x;			
-				int index0 = yw + x; // y * width + x
-				int index1 = yw + x + 1; // y * width + (x + 1)
-				int index2 = yw + x + 2; // y * width + (x + 2)
-				int index3 = yw + x + 3; // y * width + (x + 3)							
-				
-				pixelColor4 = getPixelColorBatch(rayBatch, scene, light);	
-				
-				fb[index0] = getVec3BatchData(pixelColor4, 0);	
-				fb[index1] = getVec3BatchData(pixelColor4, 1);	
-				fb[index2] = getVec3BatchData(pixelColor4, 2);
-				fb[index3] = getVec3BatchData(pixelColor4, 3);
+					Vec3Packet4 pixelColor4;
+					initVec3Batch(pixelColor4);
+					
+					for (uint32_t s = 0; s < nSamples; ++s) // anti-aliasing
+					{
+						sample = getSample(x, y, generator);
+						Ray cameraRay0(Vec3(sample.x, sample.y, 0), camera.direction); // camera ray from each pixel 
+						
+						sample = getSample(x + 1, y, generator);
+						Ray cameraRay1(Vec3(sample.x, sample.y, 0), camera.direction); // camera ray from each pixel
+						
+						sample = getSample(x + 2, y, generator);
+						Ray cameraRay2(Vec3(sample.x, sample.y, 0), camera.direction); // camera ray from each pixel
+						
+						sample = getSample(x + 3, y, generator);
+						Ray cameraRay3(Vec3(sample.x, sample.y, 0), camera.direction); // camera ray from each pixel
+						
+						RayPacket4 rayBatch;
+						initRayBatch(rayBatch, cameraRay0, cameraRay1, cameraRay2, cameraRay3);											
+						
+						accumulateVec3Batch(pixelColor4, getPixelColorBatch(rayBatch, scene, light));						
+					}
+					
+					multiplyVec3Batch(pixelColor4, invSPP);
+					
+					fb[index0] = getVec3BatchData(pixelColor4, 0);	
+					fb[index1] = getVec3BatchData(pixelColor4, 1);	
+					fb[index2] = getVec3BatchData(pixelColor4, 2);
+					fb[index3] = getVec3BatchData(pixelColor4, 3);
+				}
 			}
 		}
 	}
@@ -961,19 +1036,33 @@ void render(Vec3 *fb,
 			int width,
 			int height,
 			bool isBenchmark,
+			int nSamples,
 			int nBenchLoops)
 {
 	for (int run = 0; run < nBenchLoops; run++)
 	{
-#pragma omp parallel for num_threads(nThreads) shared(fb) schedule(dynamic, 1) 
-		for(int y = 0; y < height; y++)
+#pragma omp parallel num_threads(nThreads) shared(fb) 
 		{
-			for(int x = 0; x < width; x++)
+			std::default_random_engine generator;
+			RaySample sample;
+			
+#pragma omp for schedule(dynamic, 1) 			
+			for(int y = 0; y < height; y++)
 			{
-				size_t index = y * width + x;
-				Ray cameraRay(Vec3(x, y, 0), camera.direction); // camera ray from each pixel 
-				
-				fb[index] = getPixelColor(cameraRay, scene, light);			
+				for(int x = 0; x < width; x++)
+				{
+					size_t index = y * width + x;
+					
+					for (uint32_t s = 0; s < nSamples; ++s) // anti-aliasing
+					{
+						sample = getSample(x, y, generator);
+						Ray cameraRay(Vec3(sample.x, sample.y, 0), camera.direction); // camera ray from each pixel 
+						
+						fb[index] += getPixelColor(cameraRay, scene, light);
+					}
+					
+					fb[index] /= nSamples;				
+				}
 			}
 		}
 	}	
@@ -1023,6 +1112,7 @@ int main(int argc, char* argv[])
 	bool useSIMD = false;
 	int height = 1080;
 	int width = 1920;
+	int nSamples = 1;
 
 	for (int i = 0; i < argc; i++) // process command line args
 	{
@@ -1061,6 +1151,14 @@ int main(int argc, char* argv[])
 				std::cout << "Resolution height value not provided. Using default value of 1920x1080 pixels.\n";      
 			}				
 		}
+		
+		if (!strcmp(argv[i], "-spp")) 
+		{
+			if (i + 1 < argc)
+				nSamples = atoi(argv[i+1]); 
+			else
+				std::cout << "Sample count value not provided. Using default value of 1 spp.\n";      
+		}
 
 		if (!strcmp(argv[i], "-bench")) // usage -bench <numberLoops>
 		{
@@ -1097,9 +1195,9 @@ int main(int argc, char* argv[])
 	auto start = std::chrono::high_resolution_clock::now();
 
 	if (useSIMD)
-		renderSIMD(fb, light, scene, nThreads, camera, width, height, isBenchmark, nBenchLoops);
+		renderSIMD(fb, light, scene, nThreads, camera, width, height, isBenchmark, nSamples, nBenchLoops);
 	else
-		render(fb, light, scene, nThreads, camera, width, height, isBenchmark, nBenchLoops);
+		render(fb, light, scene, nThreads, camera, width, height, isBenchmark, nSamples, nBenchLoops);
 
 	auto stop = std::chrono::high_resolution_clock::now(); 
 	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
