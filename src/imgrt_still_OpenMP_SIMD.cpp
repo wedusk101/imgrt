@@ -630,10 +630,20 @@ void updateVec3Batch(Vec3Packet4 &vec3Batch, int index, const Vec3 &v)
 
 void initVec3Batch(Vec3Packet4 &vec3Batch, const Vec3 &v0, const Vec3 &v1, const Vec3 &v2, const Vec3 &v3)
 {
-	updateVec3Batch(vec3Batch, 0, v0);
-	updateVec3Batch(vec3Batch, 1, v1);
-	updateVec3Batch(vec3Batch, 2, v2);
-	updateVec3Batch(vec3Batch, 3, v3);
+	vec3Batch.x[0] = v0.x;
+	vec3Batch.x[1] = v1.x;
+	vec3Batch.x[2] = v2.x;
+	vec3Batch.x[3] = v3.x;
+	
+	vec3Batch.y[0] = v0.y;
+	vec3Batch.y[1] = v1.y;
+	vec3Batch.y[2] = v2.y;
+	vec3Batch.y[3] = v3.y;
+	
+	vec3Batch.z[0] = v0.z;
+	vec3Batch.z[1] = v1.z;
+	vec3Batch.z[2] = v2.z;
+	vec3Batch.z[3] = v3.z;
 }
 
 void multiplyVec3Batch(Vec3Packet4 &vec3Batch, float c)
@@ -655,6 +665,26 @@ void multiplyVec3Batch(Vec3Packet4 &vec3Batch, float c)
 Vec3 getVec3BatchData(const Vec3Packet4 &vec3Batch, int index)
 {
 	return Vec3(vec3Batch.x[index], vec3Batch.y[index], vec3Batch.z[index]);
+}
+
+__m128 dotVec3batch(const Vec3Packet4 &a, const Vec3Packet4 &b)
+{
+	__m128 _ax = _mm_loadu_ps(&a.x[0]);
+	__m128 _ay = _mm_loadu_ps(&a.y[0]);
+	__m128 _az = _mm_loadu_ps(&a.z[0]);
+	
+	__m128 _bx = _mm_loadu_ps(&b.x[0]);
+	__m128 _by = _mm_loadu_ps(&b.y[0]);
+	__m128 _bz = _mm_loadu_ps(&b.z[0]);
+	
+	__m128 _abx = _mm_mul_ps(_ax, _bx);
+	__m128 _aby = _mm_mul_ps(_ay, _by);
+	__m128 _abz = _mm_mul_ps(_az, _bz);
+	
+	__m128 _dot4 = _mm_add_ps(_abx, _aby);
+	_dot4 = _mm_add_ps(_dot4, _abz);
+	
+	return _dot4;	
 }
 
 void initRayBatch(RayPacket4 &rayBatch)
@@ -782,15 +812,16 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	Vec3 N2  = (cameraRayBatch.geometry[2]->getNormal(surf2)).getNormalized();
 	Vec3 N3  = (cameraRayBatch.geometry[3]->getNormal(surf3)).getNormalized();
 	
-	float diffuse0 = std::max(0.0f, L0.dot(N0));
-	float diffuse1 = std::max(0.0f, L1.dot(N1));
-	float diffuse2 = std::max(0.0f, L2.dot(N2));
-	float diffuse3 = std::max(0.0f, L3.dot(N3));
+	float diffuse[4];	
+	diffuse[0] = std::max(0.0f, L0.dot(N0));
+	diffuse[1] = std::max(0.0f, L1.dot(N1));
+	diffuse[2] = std::max(0.0f, L2.dot(N2));
+	diffuse[3] = std::max(0.0f, L3.dot(N3));
 	
-	Vec3 outColor0 = (colorModulate(light->color, cameraRayBatch.geometry[0]->color) * diffuse0) * light->intensity;
-	Vec3 outColor1 = (colorModulate(light->color, cameraRayBatch.geometry[1]->color) * diffuse1) * light->intensity;
-	Vec3 outColor2 = (colorModulate(light->color, cameraRayBatch.geometry[2]->color) * diffuse2) * light->intensity;
-	Vec3 outColor3 = (colorModulate(light->color, cameraRayBatch.geometry[3]->color) * diffuse3) * light->intensity;
+	Vec3 outColor0 = (colorModulate(light->color, cameraRayBatch.geometry[0]->color) * diffuse[0]) * light->intensity;
+	Vec3 outColor1 = (colorModulate(light->color, cameraRayBatch.geometry[1]->color) * diffuse[1]) * light->intensity;
+	Vec3 outColor2 = (colorModulate(light->color, cameraRayBatch.geometry[2]->color) * diffuse[2]) * light->intensity;
+	Vec3 outColor3 = (colorModulate(light->color, cameraRayBatch.geometry[3]->color) * diffuse[3]) * light->intensity;
 	
 	clamp(outColor0);
 	clamp(outColor1);
