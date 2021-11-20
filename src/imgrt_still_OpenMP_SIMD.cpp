@@ -760,6 +760,34 @@ Ray getRayBatchData(const RayPacket4 &rayBatch, int index)
 	return r;
 }
 
+Vec3Packet4 getPointsFromRayBatch(const RayPacket4 &rayBatch)
+{
+	__m128 _ox = _mm_loadu_ps(&rayBatch.ox[0]);
+	__m128 _oy = _mm_loadu_ps(&rayBatch.oy[0]);
+	__m128 _oz = _mm_loadu_ps(&rayBatch.oz[0]);
+	
+	__m128 _dx = _mm_loadu_ps(&rayBatch.dx[0]);
+	__m128 _dy = _mm_loadu_ps(&rayBatch.dy[0]);
+	__m128 _dz = _mm_loadu_ps(&rayBatch.dz[0]);
+	
+	__m128 _tmax = _mm_loadu_ps(&rayBatch.tMax[0]);
+	
+	__m128 _dtx = _mm_mul_ps(_dx, _tmax);
+	__m128 _dty = _mm_mul_ps(_dy, _tmax);
+	__m128 _dtz = _mm_mul_ps(_dz, _tmax);
+	
+	__m128 _px = _mm_add_ps(_ox, _dtx);
+	__m128 _py = _mm_add_ps(_oy, _dty);
+	__m128 _pz = _mm_add_ps(_oz, _dtz);
+	
+	Vec3Packet4 point4;
+	_mm_storeu_ps(&point4.x[0], _px);
+	_mm_storeu_ps(&point4.y[0], _py);
+	_mm_storeu_ps(&point4.z[0], _pz);
+	
+	return point4;
+}
+
 Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geometry*> &scene, const Light *light)
 {
 	Vec3 ambient(0.25, 0, 0);	// light red ambient light
@@ -773,20 +801,12 @@ Vec3Packet4 getPixelColorBatch(RayPacket4 &cameraRayBatch, const std::vector<Geo
 	for (const auto &geo : scene)
 		geo->intersectsBatch(cameraRayBatch);	
 	
-	Vec3Packet4 outColor4;
-	Vec3Packet4 surf4;
-	initVec3Batch(surf4);
-	
-	Ray cameraRay0 = getRayBatchData(cameraRayBatch, 0);
-	Ray cameraRay1 = getRayBatchData(cameraRayBatch, 1);
-	Ray cameraRay2 = getRayBatchData(cameraRayBatch, 2);
-	Ray cameraRay3 = getRayBatchData(cameraRayBatch, 3);
-	
-	// points of intersection
-	Vec3 surf0 = cameraRay0.o + cameraRay0.d * cameraRay0.tMax;
-	Vec3 surf1 = cameraRay1.o + cameraRay1.d * cameraRay1.tMax;
-	Vec3 surf2 = cameraRay2.o + cameraRay2.d * cameraRay2.tMax;
-	Vec3 surf3 = cameraRay3.o + cameraRay3.d * cameraRay3.tMax;
+	// get all the points of intersection
+	Vec3Packet4 surf4 = getPointsFromRayBatch(cameraRayBatch);
+	Vec3 surf0 = getVec3BatchData(surf4, 0);
+	Vec3 surf1 = getVec3BatchData(surf4, 1);
+	Vec3 surf2 = getVec3BatchData(surf4, 2);
+	Vec3 surf3 = getVec3BatchData(surf4, 3);	
 	
 	// light vector from the points of intersection
 	Vec3 L0 = (light->position - surf0).getNormalized();
