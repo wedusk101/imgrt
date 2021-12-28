@@ -26,8 +26,7 @@ References:
 [5] https://www.linuxjournal.com/content/introduction-gcc-compiler-intrinsics-vector-processing
 [6] https://www.youtube.com/watch?v=x9Scb5Mku1g
 [7] https://www.youtube.com/watch?v=QghC6G8TyQ0
-[8] https://www.youtube.com/watch?v=rX0ItVEVjHc
-[9] https://dl.acm.org/doi/abs/10.1145/3105762.3105768
+[8] https://dl.acm.org/doi/abs/10.1145/3105762.3105768
 
 */
 
