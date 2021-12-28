@@ -16,8 +16,8 @@ architecture. The SIMD instructions used here need at least SSE4.1 to run. I hav
 tested on GCC 9.3.0 with the flags "-fopenmp -pthread -O3 -std=c++11 -msse4.1" to enable and/or link
 OpenMP, pthreads, full optimizations, C++11 threads and SSE4.1 instruction set respectively.
 
-Resources on SIMD intrinsics:
-----------------------------
+References:
+-----------
 
 [1] https://www.cs.virginia.edu/~cr4bd/3330/S2018/simdref.html
 [2] https://docs.microsoft.com/en-us/cpp/intrinsics/compiler-intrinsics?view=msvc-160
@@ -26,6 +26,8 @@ Resources on SIMD intrinsics:
 [5] https://www.linuxjournal.com/content/introduction-gcc-compiler-intrinsics-vector-processing
 [6] https://www.youtube.com/watch?v=x9Scb5Mku1g
 [7] https://www.youtube.com/watch?v=QghC6G8TyQ0
+[8] https://www.youtube.com/watch?v=rX0ItVEVjHc
+[9] https://dl.acm.org/doi/abs/10.1145/3105762.3105768
 
 */
 
