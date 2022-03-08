@@ -1161,6 +1161,9 @@ int main(int argc, char* argv[])
 				std::cout << "Sample count value not provided. Using default value of 1 spp.\n";      
 		}
 
+		// FIXME: bug when -bench is passed before passing other flags
+		// e.g. "-bench -simd" will fail because the code will try to
+		// parse the "-simd" flag as the value for the "-bench" flag
 		if (!strcmp(argv[i], "-bench")) // usage -bench <numberLoops>
 		{
 			isBenchmark = true;
