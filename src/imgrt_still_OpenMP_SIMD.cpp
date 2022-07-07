@@ -86,16 +86,6 @@ struct Vec3
 		return Vec3(x/c, y/c, z/c);
 	}
 	
-	float operator%(const Vec3 &v) const // dot product
-	{
-		return x * v.x + y * v.y + z * v.z;
-	}
-	
-	Vec3 operator&(const Vec3 &v) const // cross product
-	{
-		return Vec3(y * v.z - v.y * z, z * v.x - x * v.z, x * v.y - y * v.x);
-	}
-	
 	Vec3& operator+=(const Vec3 &v)
 	{
 		x += v.x;
@@ -115,6 +105,11 @@ struct Vec3
 	float dot(const Vec3 &v) const // dot product
 	{
 		return x * v.x + y * v.y + z * v.z;
+	}
+	
+	Vec3 cross(const Vec3 &v) const // cross product
+	{
+		return Vec3(y * v.z - v.y * z, z * v.x - x * v.z, x * v.y - y * v.x);
 	}
 	
 	float getMagnitude() const
@@ -248,9 +243,9 @@ struct Sphere : public Geometry
 	{
 		const double eps = 1e-4;
 		const Vec3 oc = ray.o - center;
-		const double b = 2 * (ray.d % oc);
-		const double a = ray.d % ray.d;
-		const double c = (oc % oc) - (radius * radius);
+		const double b = 2 * (ray.d.dot(oc));
+		const double a = ray.d.dot(ray.d);
+		const double c = (oc .dot(oc)) - (radius * radius);
 		double delta = b * b - 4 * a * c;
 		if(delta < eps) // discriminant is less than zero
 			return false;
@@ -289,7 +284,7 @@ struct Sphere : public Geometry
 		__m128 _ocy = _mm_sub_ps(_rayoy, _centery);
 		__m128 _ocz = _mm_sub_ps(_rayoz, _centerz);		
 		
-		// const float b = 2 * (ray.d % oc);
+		// const float b = 2 * (ray.d.dot(oc));
 		__m128 _const2 = _mm_set1_ps(2.0);		
 		__m128 _bx = _mm_mul_ps(_raydx, _ocx);
 		__m128 _by = _mm_mul_ps(_raydy, _ocy);
@@ -299,7 +294,7 @@ struct Sphere : public Geometry
 		_b = _mm_add_ps(_b, _bz);
 		_b = _mm_mul_ps(_b, _const2);
 		
-		// const float a = rayd % rayd;
+		// const float a = ray.d.dot(ray.d);
 		__m128 _ax = _mm_mul_ps(_raydx, _raydx);
 		__m128 _ay = _mm_mul_ps(_raydy, _raydy);
 		__m128 _az = _mm_mul_ps(_raydz, _raydz);
@@ -307,7 +302,7 @@ struct Sphere : public Geometry
 		__m128 _a = _mm_add_ps(_ax, _ay);
 		_a = _mm_add_ps(_a, _az);		
 		
-		// const float c = (oc % oc) - (radius * radius);
+		// const float c = (oc.dot(oc)) - (radius * radius);
 		__m128 _ocx2 = _mm_mul_ps(_ocx, _ocx);
 		__m128 _ocy2 = _mm_mul_ps(_ocy, _ocy);
 		__m128 _ocz2 = _mm_mul_ps(_ocz, _ocz);
@@ -462,10 +457,10 @@ struct Plane : public Geometry
 	virtual bool intersects(const Ray &ray) const
 	{
 		const double eps = 1e-4;;
-		double parameter = ray.d % normal;
+		double parameter = ray.d.dot(normal);
 		if(fabs(parameter) < eps) // ray is parallel to the plane
 			return false;
-		ray.t = ((point - ray.o) % normal) / parameter;
+		ray.t = ((point - ray.o).dot(normal)) / parameter;
 		if (ray.t >= ray.tMin && ray.t <= ray.tMax)
 		{
 			ray.tMax = ray.t;
@@ -496,7 +491,7 @@ struct Plane : public Geometry
 		__m128 _pointy = _mm_set1_ps(point.y);
 		__m128 _pointz = _mm_set1_ps(point.z);
 
-		// double parameter = ray.d % normal;
+		// double parameter = ray.d.dot(normal);
 		__m128 _parmx = _mm_mul_ps(_raydx, _normalx);
 		__m128 _parmy = _mm_mul_ps(_raydy, _normaly);
 		__m128 _parmz = _mm_mul_ps(_raydz, _normalz);
@@ -517,7 +512,7 @@ struct Plane : public Geometry
 		if (missRay0 && missRay1 && missRay2 && missRay3)
 			return;		
 
-		// ray.t = ((point - ray.o) % normal) / parameter;
+		// ray.t = ((point - ray.o).dot(normal)) / parameter;
 		__m128 _pmrayox = _mm_sub_ps(_pointx, _rayox);
 		__m128 _pmrayoy = _mm_sub_ps(_pointy, _rayoy);
 		__m128 _pmrayoz = _mm_sub_ps(_pointz, _rayoz);
@@ -1161,9 +1156,6 @@ int main(int argc, char* argv[])
 				std::cout << "Sample count value not provided. Using default value of 1 spp.\n";      
 		}
 
-		// FIXME: bug when -bench is passed before passing other flags
-		// e.g. "-bench -simd" will fail because the code will try to
-		// parse the "-simd" flag as the value for the "-bench" flag
 		if (!strcmp(argv[i], "-bench")) // usage -bench <numberLoops>
 		{
 			isBenchmark = true;
